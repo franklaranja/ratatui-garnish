@@ -315,7 +315,7 @@ nodyn::nodyn! {
     }
 }
 
-impl<'a, W> GarnishedWidget<'a, W> {
+impl<W> GarnishedWidget<'_, W> {
     /// Creates a new `GarnishedWidget` with a single garnish.
     pub fn new<G: Into<Garnish<'a>>>(widget: W, garnish: G) -> Self {
         Self {
@@ -332,7 +332,7 @@ impl<'a, W> GarnishedWidget<'a, W> {
     }
 }
 
-impl<'a, W: Widget> Widget for GarnishedWidget<'a, W> {
+impl<W: Widget> Widget for GarnishedWidget<'_, W> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut render_area = area;
         for g in &self.garnish {
@@ -350,7 +350,7 @@ impl<'a, W: Widget> Widget for GarnishedWidget<'a, W> {
     }
 }
 
-impl<'a, W: WidgetRef> WidgetRef for GarnishedWidget<'a, W> {
+impl<W: WidgetRef> WidgetRef for GarnishedWidget<'_, W> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let mut render_area = area;
         for g in &self.garnish {
@@ -368,7 +368,7 @@ impl<'a, W: WidgetRef> WidgetRef for GarnishedWidget<'a, W> {
     }
 }
 
-impl<'a, W> GarnishedStatefulWidget<'a, W> {
+impl<W> GarnishedStatefulWidget<'_, W> {
     /// Creates a new `GarnishedWidget` with a single garnish.
     pub fn new<G: Into<Garnish<'a>>>(widget: W, garnish: G) -> Self {
         Self {
@@ -385,7 +385,7 @@ impl<'a, W> GarnishedStatefulWidget<'a, W> {
     }
 }
 
-impl<'a, W> StatefulWidget for GarnishedStatefulWidget<'a, W>
+impl<W> StatefulWidget for GarnishedStatefulWidget<'_, W>
 where
     W: StatefulWidget,
 {
@@ -408,7 +408,7 @@ where
     }
 }
 
-impl<'a, W> StatefulWidgetRef for GarnishedStatefulWidget<'a, W>
+impl<W> StatefulWidgetRef for GarnishedStatefulWidget<'_, W>
 where
     W: StatefulWidgetRef,
 {

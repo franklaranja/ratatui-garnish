@@ -165,7 +165,7 @@ impl WidgetModifier for Shadow {
 
 /// Renders a shadow for your widget using half character
 /// offset, only using full type shadow. Default creates
-/// a HalfShadow with an offset of 1, 1.
+/// a `HalfShadow` with an offset of 1, 1.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct HalfShadow {
     x_offset: i8,
@@ -177,7 +177,7 @@ impl HalfShadow {
     /// The offsets are given in half character lengths:
     /// e.g. an offset of 3 means 1.5 characters.
     #[must_use = "method returns a new instance"]
-    pub fn new(x_offset: i8, y_offset: i8) -> Self {
+    pub const fn new(x_offset: i8, y_offset: i8) -> Self {
         Self { x_offset, y_offset }
     }
 }
@@ -225,18 +225,18 @@ impl WidgetModifier for HalfShadow {
         let delta_x = i32::from(self.x_offset.unsigned_abs() % 2);
         let delta_y = i32::from(self.y_offset.unsigned_abs() % 2);
 
-        let mut start_x = widget_area.left() as i32 + i32::from(self.x_offset / 2);
+        let mut start_x = i32::from(widget_area.left()) + i32::from(self.x_offset / 2);
         if self.x_offset < 0 {
             start_x -= 1;
         }
 
-        let mut start_y = widget_area.top() as i32 + i32::from(self.y_offset / 2);
+        let mut start_y = i32::from(widget_area.top()) + i32::from(self.y_offset / 2);
         if self.y_offset < 0 {
             start_y -= 1;
         }
 
-        let end_x = start_x + widget_area.width as i32 + delta_x;
-        let end_y = start_y + widget_area.height as i32 + delta_y;
+        let end_x = start_x + i32::from(widget_area.width) + delta_x;
+        let end_y = start_y + i32::from(widget_area.height) + delta_y;
 
         if start_x < 0 || start_y < 0 {
             return;

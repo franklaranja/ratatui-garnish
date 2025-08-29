@@ -377,6 +377,7 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
     }
 
     const fn calculate_vertical_area(&self, area: Rect, x: u16) -> Rect {
+        #[allow(clippy::cast_possible_truncation)]
         let margin_u16 = self.margin as u16;
         let double_margin = margin_u16.saturating_mul(2);
 

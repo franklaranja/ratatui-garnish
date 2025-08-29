@@ -272,7 +272,7 @@ impl BorderSet {
     /// └╌╌╌╌╌╌╌┘
     /// ```
     #[must_use = "constructor returns a new instance"]
-    pub fn dashed() -> Self {
+    pub const fn dashed() -> Self {
         Self::plain().horizontals('╌').verticals('┆')
     }
 
@@ -284,7 +284,7 @@ impl BorderSet {
     /// └┄┄┄┄┄┄┄┘
     /// ```
     #[must_use = "constructor returns a new instance"]
-    pub fn double_dashed() -> Self {
+    pub const fn double_dashed() -> Self {
         Self::plain().horizontals('┄').verticals('┊')
     }
 
@@ -317,7 +317,7 @@ impl BorderSet {
     /// ╰╌╌╌╌╌╌╌╯
     /// ```
     #[must_use = "constructor returns a new instance"]
-    pub fn rounded_dashed() -> Self {
+    pub const fn rounded_dashed() -> Self {
         Self::rounded().horizontals('╌').verticals('┆')
     }
 
@@ -329,7 +329,7 @@ impl BorderSet {
     /// ╰┄┄┄┄┄┄┄╯
     /// ```
     #[must_use = "constructor returns a new instance"]
-    pub fn rounded_double_dashed() -> Self {
+    pub const fn rounded_double_dashed() -> Self {
         Self::rounded().horizontals('┄').verticals('┊')
     }
 
