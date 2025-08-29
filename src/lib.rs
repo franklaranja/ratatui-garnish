@@ -315,7 +315,7 @@ nodyn::nodyn! {
     }
 }
 
-impl<W> GarnishedWidget<'_, W> {
+impl<'a, W> GarnishedWidget<'a, W> {
     /// Creates a new `GarnishedWidget` with a single garnish.
     pub fn new<G: Into<Garnish<'a>>>(widget: W, garnish: G) -> Self {
         Self {
@@ -368,7 +368,7 @@ impl<W: WidgetRef> WidgetRef for GarnishedWidget<'_, W> {
     }
 }
 
-impl<W> GarnishedStatefulWidget<'_, W> {
+impl<'a, W> GarnishedStatefulWidget<'a, W> {
     /// Creates a new `GarnishedWidget` with a single garnish.
     pub fn new<G: Into<Garnish<'a>>>(widget: W, garnish: G) -> Self {
         Self {
