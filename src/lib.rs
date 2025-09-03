@@ -6,107 +6,105 @@
 //!
 //! A powerful composition system for [Ratatui](https://ratatui.rs) widgets.
 //!
-//! Ratatui Garnish provides a composable way to modify any widget,
-//! including borders, titles, padding and styling. You can layer multiple garnishes
-//! on any widget without modifying the widget itself. The garnishes and the order they
-//! applied in can be changed at runtime whilst maintaining type safety (no trait objects).
-//! a `GarnisedWidget` acts like the original widget with a `Vec` of Garnishes spliced in.
+//! `ratatui-garnish` provides a flexible way to decorate any Ratatui widget with
+//! modifications like borders, titles, padding, shadows, and styling. Garnishes can be layered
+//! in any order, applied at runtime, and modified without altering the underlying widget. The
+//! `GarnishedWidget` struct wraps a widget and a `Vec` of `Garnish` enums, maintaining zero-cost
+//! abstractions and type safety without trait objects.
 //!
-//! Do you wish `Block` has a margin? Just garnish your widget with `Padding` before you
-//! add a border. You want to have multiple borders? Just add them!
+//! Want a margin outside a border? Garnish with `Padding` before a border. Need multiple borders or
+//! titles? Simply add them! Writing custom widgets but want to avoid boilerplate for styling or
+//! borders? Use `ratatui-garnish` with any widget implementing `Widget`, `WidgetRef`,
+//! `StatefulWidget`, or `StatefulWidgetRef`.
 //!
-//! Are you writing widgets, but don't want to add all that boiler plate for `Style` and `Border`?
-//! Use ratatui-garnish, it works with any widget that implements `Widget`, `StatefulWidget`.
-//! `WidgetRef` or `StatefulWidgetRef`.
-//!
-//! ## Example
+//! # Example
 //!
 //! ```rust
 //! use ratatui::{text::Text, widgets::Padding, style::{Color, Style}};
 //! use ratatui_garnish::GarnishableWidget;
 //! use ratatui_garnish::{border::RoundedBorder, title::{Title, Above}};
 //!
-//! // Create a paragraph with multiple decorations
+//! // Create a text widget with multiple decorations
 //! let widget = Text::raw("Hello, World!\nTasty TUIs from Ratatui")
 //!     .garnish(RoundedBorder::default())           // Add a rounded border
 //!     .garnish(Title::<Above>::raw("My App"))      // Add a title above
-//!     .garnish(Style::default().bg(Color::Blue))   // Add a background color
+//!     .garnish(Style::default().bg(Color::Blue))   // Set a background color
 //!     .garnish(Padding::uniform(1));               // Add padding inside
 //!
-//! // The garnishes will be applied in order when rendering
+//! // Garnishes are applied in order during rendering
 //! ```
 //!
-//! # Getting started
+//! # Getting Started
+//!
+//! Import the `GarnishableWidget` trait to enable the `garnish` method on any Ratatui widget:
 //!
 //! ```rust
 //! use ratatui_garnish::GarnishableWidget;
 //! ```
 //!
-//! This trait adds the garnish function to any ratatui [`Widget`], there are similar traits
-//! for [`WidgetRef`], [`StatefulWidget`] and [`StatefulWidgetRef`].
-//!
-//! The [`RenderModifier`] trait specifies what a garnish does. Ratatui-garnish implements
-//! this trait for [`Style`] and [`Padding`] from ratatui. So you can use them
-//! as garlnishes:
+//! This trait extends `Widget`. Therecare similar traits for `WidgetRef`, `StatefulWidget`,
+//! and `StatefulWidgetRef`.
+//! The [`RenderModifier`] trait defines how garnishes modify rendering and layout. Ratatui's
+//! `Style` and `Padding` types implement `RenderModifier`, allowing their use as garnishes:
 //!
 //! ```rust
-//! use ratatui_garnish::{GarnishableWidget, RenderModifier};
-//! use ratatui::{style::{Style, Color}, text::Line, widgets::Padding};
+//! use ratatui::{style::{Color, Style}, text::Line, widgets::Padding};
+//! use ratatui_garnish::GarnishableWidget;
 //!
-//! let widget = Line::raw("Hello, World!")         // create widget
-//!    .garnish(Style::default().bg(Color::Blue))   // set background for padded area
-//!    .garnish(Padding::horizontal(1))             // add a padding to the left and right side.
-//!    .garnish(Style::default().bg(Color::Red))    // set background for next padded area
-//!    .garnish(Padding::vertical(2))               // add a padding to the top and bottom.
-//!    .garnish(Style::default().bg(Color::White)); // set background for the line
+//! let widget = Line::raw("Hello, World!")
+//!     .garnish(Style::default().bg(Color::Blue))   // Background for padded area
+//!     .garnish(Padding::horizontal(1))             // Padding on left and right
+//!     .garnish(Style::default().bg(Color::Red))    // Background for next padded area
+//!     .garnish(Padding::vertical(2))               // Padding on top and bottom
+//!     .garnish(Style::default().bg(Color::White)); // Background for the line
 //! ```
 //!
-//! The first call to `garnish()` returns a [`GarnishedWidget`], which wraps your
-//! widget and a `Vec` of the [`Garnishes`]. It also has a `garnish()` method so you
-//! just can keep on adding garnishes. At any time you can access the
+//! The first call to `garnish()` returns a [`GarnishedWidget`] or [`GarnishedStatefulWidget`], which wraps your
+//! widget and a `Vec` of [`Garnish`]. It also has a `garnish()` method so you
+//! can keep adding garnishes. At any time you can access the
 //! garnishes you've added by treating `GarnishedWidget` like a `Vec` of
-//! `Garnishes` which is an enum that wraps all available garnishes.
+//! `Garnish` items, which is an enum that wraps all available garnishes.
 //!
 //! ```rust
 //! # use ratatui_garnish::{GarnishableWidget, RenderModifier};
 //! # use ratatui::{style::{Style, Color}, text::Line, widgets::Padding};
 //! #
-//! # let widget = Line::raw("Hello, World!")
-//! #   .garnish(Style::default().bg(Color::Blue))
-//! #   .garnish(Padding::horizontal(1))
-//! #   .garnish(Style::default().bg(Color::Red))
-//! #   .garnish(Padding::vertical(2))
-//! #   .garnish(Style::default().bg(Color::White));
+//! let widget = Line::raw("Hello, World!")
+//!    .garnish(Style::default().bg(Color::Blue))
+//!    .garnish(Padding::horizontal(1));
+//!
 //! assert!(widget[0].is_style()); // The first garnish we added
 //! assert_eq!(widget.first_padding(), Some(&Padding::horizontal(1)));
 //!
-//! // let's have a look at all the garnishes
+//! // Let's look at all the garnishes
 //! for garnish in &widget {
 //!     println!("{garnish:?}");
 //! }
 //! ```
 //!
-//! ## Available Garnishes
+//! # Available Garnishes
 //!
-//! ### Borders
-//! - Standard borders like [`PlainBorder`], [`RoundedBorder`], [`DoubleBorder`] and [`ThickBorder`]
-//! - [`CharBorder`] - Custom single character: `****`
-//! - [`CustomBorder`] - Fully customizable character set
-//! - Specialty borders: [`QuadrantInsideBorder`], [`QuadrantOutsideBorder`], [`FatInsideBorder`], [`FatOutsideBorder`]
+//! ## Borders
+//! - Standard: [`PlainBorder`], [`RoundedBorder`], [`DoubleBorder`], [`ThickBorder`]
+//! - Dashed variants: [`DashedBorder`], [`RoundedDashedBorder`], [`ThickDashedBorder`], [`DoubleDashedBorder`], [`RoundedDoubleDashedBorder`], [`ThickDoubleDashedBorder`]
+//! - Custom: [`CharBorder`] (single character, e.g., `****`), [`CustomBorder`] (fully customizable character set)
+//! - Specialty: [`QuadrantInsideBorder`], [`QuadrantOutsideBorder`], [`FatInsideBorder`], [`FatOutsideBorder`]
 //!
-//! ### Titles
-//! - [`Title<Top>`] - Renders over the top border/line
-//! - [`Title<Bottom>`] - Renders over the bottom border/line  
-//! - [`Title<Above>`] - Renders above widget (reserves space)
-//! - [`Title<Below>`] - Renders below widget (reserves space)
-//! - There are similar positions for rendering over the left or
-//!   right border.
+//! ## Titles
+//! - Horizontal: [`Title<Top>`] (over top border), [`Title<Bottom>`] (over bottom border), [`Title<Above>`] (reserves space above), [`Title<Below>`] (reserves space below)
+//! - Vertical: [`Title<Left>`] (over left border), [`Title<Right>`] (over right border), [`Title<Before>`] (reserves space left), [`Title<After>`] (reserves space right)
 //!
-//! ### Built-in Ratatui Support
-//! - [`Style`] - Apply background colors, text styling
-//! - [`Padding`] - Add spacing around the widget
+//! ## Shadows
+//! - [`Shadow`] (light `░`, medium `▒`, dark `▓`, or full `█` shades with full-character offsets)
+//! - [`HalfShadow`] (full `█` or quadrant characters with half-character offsets)
+//!
+//! ## Built-in Ratatui Support
+//! - [`Style`] (background colors, text styling)
+//! - [`Padding`] (spacing around the widget)
 //!
 //! ## Complex Compositions
+//!
+//! Combine multiple garnishes for rich widget designs:
 //!
 //! ```rust
 //! use ratatui_garnish::{
@@ -133,10 +131,10 @@
 //!     .garnish(Padding::uniform(1));
 //! ```
 //!
-//! ## Applying the same garnishes to multiple widgets.
+//! # Reusing Garnishes
 //!
-//! There is a regular polymorphic `Vec`, [`Garnishes`] that can be
-//! used in combination with `extend_from_slice` from [`GarnishedWidget`].
+//! Use the [`Garnishes`] vec and `extend_from_slice` and `extend` to apply
+//! the same garnishes to multiple widgets:
 //!
 //! ```rust
 //! use ratatui_garnish::{
@@ -165,23 +163,21 @@
 //! other_widget.extend(garnishes);
 //! ```
 //!
-//! ## Performance Notes
+//! # Performance Notes
 //!
-//! - Garnishes are applied in the order they're added
-//! - Area modifications are accumulated efficiently  
-//! - Zero-cost abstractions - no runtime overhead for unused garnishes
-//! - No dynamic dispatch and no type erasure
+//! - Garnishes are applied in the order they are added, allowing precise control over rendering.
+//! - Zero-cost abstractions ensure no runtime cost for unused garnishes.
+//! - No dynamic dispatch or type erasure, preserving type safety and performance.
 //!
-//! ## Compatibility
+//! # Compatibility
 //!
-//! Any Ratatui Garnish is designed to work seamlessly with Ratatui widgets and follows the same
-//! patterns and conventions. Any widget implementing [`Widget`], [`StatefulWidget`], [`WidgetRef`]
-//! or [`StatefulWidgetRef`] can be garnished.
+//! `ratatui-garnish` works seamlessly with any Ratatui widget implementing `Widget`, `WidgetRef`,
+//! `StatefulWidget`, or `StatefulWidgetRef`, following Ratatui's conventions.
 //!
-//! ## More garnishes
+//! # Contributing
 //!
-//! This is just the first release of ratatui-garnish. More garnishes are planned!
-//! Contributions are welcome!
+//! This is the first release of `ratatui-garnish`. More garnishes are planned, and contributions are
+//! welcome!
 
 use derive_more::{Deref, DerefMut};
 use ratatui::{
@@ -211,25 +207,31 @@ pub use garnishable::{
 use shadow::{HalfShadow, Shadow};
 use title::{Above, After, Before, Below, Bottom, Left, Right, Title, Top};
 
-/// A trait for widget garnishes that can transform rendering and layout.
+/// A trait that can modify rendering of a widget.
 pub trait RenderModifier {
-    /// Modifies the rendering area for the widget.
+    /// Modifies the widget's rendering area.
+    ///
+    /// Returns the adjusted area, typically reduced to account for borders, padding, or shadows.
     /// Default implementation returns the input area unchanged.
     fn modify_area(&self, area: Rect) -> Rect {
         area
     }
 
-    /// Runs before the main widget is rendered.
+    /// Executes before the widget is rendered.
+    ///
+    /// Used for pre-rendering effects like setting background styles or drawing shadows.
     /// Default implementation does nothing.
     fn before_render(&self, _area: Rect, _buf: &mut Buffer) {}
 
-    /// Runs after the main widget is rendered.
+    /// Executes after the widget is rendered.
+    ///
+    /// Used for post-rendering effects like drawing titles over borders.
     /// Default implementation does nothing.
     fn after_render(&self, _area: Rect, _buf: &mut Buffer) {}
 }
 
 nodyn::nodyn! {
-    /// Wrapper enum for all garnishes.
+    /// Enum wrapping all available garnishes.
     #[module_path = "ratatui_garnish"]
     #[derive(Debug, Clone)]
     pub enum Garnish<'a> {
@@ -271,16 +273,18 @@ nodyn::nodyn! {
         fn after_render(&self, area: Rect, buf: &mut Buffer);
     }
 
-    /// A wrapper around `Vec<Garnish>`. Convenient for
-    /// creating `GarnisedWidget`s with the same garnishes
+    /// A `Vec` of `Garnish` for applying multiple garnishes to widgets.
+    ///
+    /// Useful for reusing a set of garnishes across multiple widgets.
+    ///
+    /// # Example
     ///
     /// ```rust
+    /// use ratatui::{style::{Color, Style}, text::Line};
     /// use ratatui_garnish::{
-    ///     GarnishableWidget, RenderModifier,
+    ///     border::DoubleBorder, garnishes, GarnishableWidget,
     ///     title::{Title, Top},
-    ///     border::DoubleBorder, garnishes,
     /// };
-    /// use ratatui::{text::Line, style::{Color, Style, Modifier}};
     ///
     /// let garnishes = garnishes![
     ///     Style::default().fg(Color::Blue),
@@ -288,43 +292,69 @@ nodyn::nodyn! {
     ///     Style::default().fg(Color::White),
     /// ];
     ///
-    /// let mut widget = Line::raw("A widget with a blue double border")
-    ///     .garnish(Title::<Top>::raw("First"));
-    /// widget.extend_from_slice(&garnishes);
+    /// let widget = Line::raw("Garnished Widget")
+    ///     .garnish(Title::<Top>::raw("Blue Border"))
+    ///     .extend_from_slice(&garnishes);
     /// ```
     vec Garnishes;
 
-    /// A widget that wraps another widget with a vec of garnishes
-    /// (decorators).
-    #[vec(garnish)]
+    /// A widget that wraps another widget with a vector of garnishes.
+    ///
+    /// This struct implements `Deref` and `DerefMut` to the inner widget,
+    /// allowing you to access the original widget's methods while adding
+    /// garnish functionality.
+    #[vec(garnishes)]
     #[derive(Debug, Deref, DerefMut)]
     pub struct GarnishedWidget<W> {
         #[deref]
         #[deref_mut]
-        pub inner: W,
+        pub widget: W,
     }
 
-    /// A widget that wraps another stateful widget with a vec of garnishes
-    /// (decorators).
-    #[vec(garnish)]
+    /// A widget that wraps another stateful widget with a vec of garnishes.
+    ///
+    /// This struct implements `Deref` and `DerefMut` to the inner widget,
+    /// allowing you to access the original widget's methods while adding
+    /// garnish functionality.
+    #[vec(garnishes)]
     #[derive(Debug, Deref, DerefMut)]
     pub struct GarnishedStatefulWidget<W> {
         #[deref]
         #[deref_mut]
-        pub inner: W,
+        pub widget: W,
     }
 }
 
 impl<'a, W> GarnishedWidget<'a, W> {
-    /// Creates a new `GarnishedWidget` with a single garnish.
+    /// creates a new `garnishedwidget` with a single garnish.
+    ///
+    /// # example
+    ///
+    /// ```rust
+    /// use ratatui::{style::Style, text::Line};
+    /// use ratatui_garnish::GarnishedWidget;
+    ///
+    /// let widget = GarnishedWidget::new(Line::raw("Test"), Style::default());
+    /// ```
     pub fn new<G: Into<Garnish<'a>>>(widget: W, garnish: G) -> Self {
         Self {
-            inner: widget,
-            garnish: vec![garnish.into()],
+            widget,
+            garnishes: vec![garnish.into()],
         }
     }
 
     /// Adds an additional garnish to the widget.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use ratatui::{style::Style, text::Line, widgets::Padding};
+    /// use ratatui_garnish::GarnishableWidget;
+    ///
+    /// let widget = Line::raw("Test")
+    ///     .garnish(Style::default())
+    ///     .garnish(Padding::uniform(1));
+    /// ```
     #[must_use = "method returns a new instance and does not mutate the original"]
     pub fn garnish<G: Into<Garnish<'a>>>(mut self, garnish: G) -> Self {
         self.push(garnish);
@@ -335,15 +365,15 @@ impl<'a, W> GarnishedWidget<'a, W> {
 impl<W: Widget> Widget for GarnishedWidget<'_, W> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut render_area = area;
-        for g in &self.garnish {
+        for g in &self.garnishes {
             g.before_render(render_area, buf);
             render_area = g.modify_area(render_area);
         }
 
-        self.inner.render(render_area, buf);
+        self.widget.render(render_area, buf);
 
         let mut render_area = area;
-        for g in &self.garnish {
+        for g in &self.garnishes {
             g.after_render(render_area, buf);
             render_area = g.modify_area(render_area);
         }
@@ -353,15 +383,15 @@ impl<W: Widget> Widget for GarnishedWidget<'_, W> {
 impl<W: WidgetRef> WidgetRef for GarnishedWidget<'_, W> {
     fn render_ref(&self, area: Rect, buf: &mut Buffer) {
         let mut render_area = area;
-        for g in &self.garnish {
+        for g in &self.garnishes {
             g.before_render(render_area, buf);
             render_area = g.modify_area(render_area);
         }
 
-        self.inner.render_ref(render_area, buf);
+        self.widget.render_ref(render_area, buf);
 
         let mut render_area = area;
-        for g in &self.garnish {
+        for g in &self.garnishes {
             g.after_render(render_area, buf);
             render_area = g.modify_area(render_area);
         }
@@ -369,15 +399,35 @@ impl<W: WidgetRef> WidgetRef for GarnishedWidget<'_, W> {
 }
 
 impl<'a, W> GarnishedStatefulWidget<'a, W> {
-    /// Creates a new `GarnishedWidget` with a single garnish.
+    /// Creates a new `GarnishedStatefulWidget` with a single garnish.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use ratatui::{style::Style, widgets::List, text::Line};
+    /// use ratatui_garnish::GarnishedStatefulWidget;
+    ///
+    /// let widget = GarnishedStatefulWidget::new(List::new::<Vec<Line>>(vec![]), Style::default());
+    /// ```
     pub fn new<G: Into<Garnish<'a>>>(widget: W, garnish: G) -> Self {
         Self {
-            inner: widget,
-            garnish: vec![garnish.into()],
+            widget,
+            garnishes: vec![garnish.into()],
         }
     }
 
     /// Adds an additional garnish to the widget.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use ratatui::{style::Style, widgets::{List, Padding}, text::Line};
+    /// use ratatui_garnish::GarnishableWidget;
+    ///
+    /// let widget = List::new::<Vec<Line>>(vec![])
+    ///     .garnish(Style::default())
+    ///     .garnish(Padding::uniform(1));
+    /// ```
     #[must_use = "method returns a new instance and does not mutate the original"]
     pub fn garnish<G: Into<Garnish<'a>>>(mut self, garnish: G) -> Self {
         self.push(garnish);
@@ -393,15 +443,15 @@ where
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let mut render_area = area;
-        for g in &self.garnish {
+        for g in &self.garnishes {
             g.before_render(render_area, buf);
             render_area = g.modify_area(render_area);
         }
 
-        self.inner.render(render_area, buf, state);
+        self.widget.render(render_area, buf, state);
 
         let mut render_area = area;
-        for g in &self.garnish {
+        for g in &self.garnishes {
             g.after_render(render_area, buf);
             render_area = g.modify_area(render_area);
         }
@@ -416,15 +466,15 @@ where
 
     fn render_ref(&self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let mut render_area = area;
-        for g in &self.garnish {
+        for g in &self.garnishes {
             g.before_render(render_area, buf);
             render_area = g.modify_area(render_area);
         }
 
-        self.inner.render_ref(render_area, buf, state);
+        self.widget.render_ref(render_area, buf, state);
 
         let mut render_area = area;
-        for g in &self.garnish {
+        for g in &self.garnishes {
             g.after_render(render_area, buf);
             render_area = g.modify_area(render_area);
         }
@@ -447,5 +497,40 @@ impl RenderModifier for Padding {
             width: area.width.saturating_sub(self.left + self.right),
             height: area.height.saturating_sub(self.top + self.bottom),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ratatui::{
+        style::{Color, Style},
+        text::Line,
+        widgets::Padding,
+    };
+
+    #[test]
+    fn garnish_chain() {
+        let widget = Line::raw("Test")
+            .garnish(Style::default().bg(Color::Blue))
+            .garnish(Padding::uniform(1));
+
+        assert_eq!(widget.len(), 2);
+        assert!(widget[0].is_style());
+        assert_eq!(widget.first_padding(), Some(&Padding::uniform(1)));
+    }
+
+    #[test]
+    fn widget_rendering() {
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 10, 10));
+        let widget = Line::raw("Test")
+            .garnish(Padding::uniform(1))
+            .garnish(Style::default().bg(Color::Blue));
+
+        widget.render(Rect::new(0, 0, 10, 10), &mut buffer);
+
+        // Check padding reduced the area
+        assert_eq!(buffer[(1, 1)].style().bg, Some(Color::Blue)); // Inside padded area
+        assert_eq!(buffer[(0, 0)].style().bg, Some(Color::Reset)); // Outside padded area
     }
 }
