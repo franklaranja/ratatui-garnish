@@ -14,7 +14,7 @@
 </div>
 
 `ratatui-garnish` is a powerful composition system for [Ratatui](https://ratatui.rs) widgets,
-allowing you to decorate any widget with borders, titles, shadows,
+allowing you to change de rendering of any widget with garnishes like borders, titles, shadows,
 padding, and styles in a flexible, type-safe way. Layer multiple
 garnishes in any order, apply them at runtime, and modify them
 without altering the underlying widget. With zero-cost abstractions
@@ -29,7 +29,7 @@ Use `ratatui-garnish` with any widget implementing
 
 ## Features
 
-- **Composable Decorations**: Layer borders, titles, shadows, padding,
+- **Composable Modifications**: Layer borders, titles, shadows, padding,
   and styles in any order.
 - **Type-Safe**: No trait objects or dynamic dispatch, preserving
   Rust's type system.

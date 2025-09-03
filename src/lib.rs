@@ -6,8 +6,8 @@
 //!
 //! A powerful composition system for [Ratatui](https://ratatui.rs) widgets.
 //!
-//! `ratatui-garnish` provides a flexible way to decorate any Ratatui widget with
-//! modifications like borders, titles, padding, shadows, and styling. Garnishes can be layered
+//! `ratatui-garnish` provides a flexible way to change the rendering of any Ratatui widget with
+//! garnishes like borders, titles, padding, shadows, and styling. Garnishes can be layered
 //! in any order, applied at runtime, and modified without altering the underlying widget. The
 //! `GarnishedWidget` struct wraps a widget and a `Vec` of `Garnish` enums, maintaining zero-cost
 //! abstractions and type safety without trait objects.
@@ -142,7 +142,7 @@
 //!
 //! # Reusing Garnishes
 //!
-//! Use the [`Garnishes`] vec and `extend_from_slice` and `extend` to apply
+//! Use the [`Garnishes`] vec and `extend_from_slice` or `extend` to apply
 //! the same garnishes to multiple widgets:
 //!
 //! ```rust
