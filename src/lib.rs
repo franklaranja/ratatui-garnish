@@ -14,8 +14,7 @@
 //!
 //! Want a margin outside a border? Garnish with `Padding` before a border. Need multiple borders or
 //! titles? Simply add them! Writing custom widgets but want to avoid boilerplate for styling or
-//! borders? Use `ratatui-garnish` with any widget implementing `Widget`, `WidgetRef`,
-//! `StatefulWidget`, or `StatefulWidgetRef`.
+//! borders? Use `ratatui-garnish` with any widget implementing `Widget` or `StatefulWidget`.
 //!
 //! # Example
 //!
@@ -42,14 +41,13 @@
 //! use ratatui_garnish::GarnishableWidget;
 //! ```
 //!
-//! This trait extends `Widget`. Therecare similar traits for `WidgetRef`, `StatefulWidget`,
-//! and `StatefulWidgetRef`.
+//! This trait extends `Widget`. There is a similar traits `GarnishableStatefulWidget` for `StatefulWidget`.
 //! The [`RenderModifier`] trait defines how garnishes modify rendering and layout. Ratatui's
 //! `Style` and `Padding` types implement `RenderModifier`, allowing their use as garnishes:
 //!
 //! ```rust
 //! use ratatui::{style::{Color, Style}, text::Line, widgets::Padding};
-//! use ratatui_garnish::GarnishableWidget;
+//! use ratatui_garnish::{GarnishableWidget, RenderModifier};
 //!
 //! let widget = Line::raw("Hello, World!")
 //!     .garnish(Style::default().bg(Color::Blue))   // Background for padded area
@@ -82,6 +80,17 @@
 //! }
 //! ```
 //!
+//! Alternatively you can create a `GarnishedWidget` from a widget and a garnish using the `new` constructor
+//! or from only a widget using `from`.  Add garnishes with methods like `push` or `extend`.
+//!
+//! ```rust
+//! use ratatui_garnish::{GarnishedWidget, RenderModifier};
+//! use ratatui::{style::{Style, Color}, text::Line, widgets::Padding};
+//!
+//! let mut widget = GarnishedWidget::from(Line::raw("Hello, World!"));
+//! widget.push(Style::default().bg(Color::Green));
+//! ````
+//
 //! # Available Garnishes
 //!
 //! ## Borders
@@ -138,7 +147,7 @@
 //!
 //! ```rust
 //! use ratatui_garnish::{
-//!     GarnishableWidget, RenderModifier,
+//!     GarnishedWidget, GarnishableWidget, RenderModifier,
 //!     title::{Title, Top},
 //!     border::DoubleBorder, garnishes,
 //! };
@@ -152,9 +161,7 @@
 //!     Style::default().fg(Color::White),
 //! ];
 //!
-//! let mut widget = Line::raw("First widget")
-//!     .garnish(Title::<Top>::styled("First",
-//!         Style::default().fg(Color::Red).add_modifier(Modifier::BOLD)).margin(1));
+//! let mut widget = GarnishedWidget::from(Line::raw("First widget"));
 //! widget.extend_from_slice(&garnishes);
 //!
 //! let mut other_widget = Line::raw("Other widget")
@@ -171,8 +178,8 @@
 //!
 //! # Compatibility
 //!
-//! `ratatui-garnish` works seamlessly with any Ratatui widget implementing `Widget`, `WidgetRef`,
-//! `StatefulWidget`, or `StatefulWidgetRef`, following Ratatui's conventions.
+//! `ratatui-garnish` works seamlessly with any Ratatui widget implementing `Widget` or `StatefulWidget`,
+//! following Ratatui's conventions.
 //!
 //! # Contributing
 //!
@@ -188,7 +195,6 @@ use ratatui::{
 };
 
 pub mod border;
-mod garnishable;
 pub mod shadow;
 pub mod title;
 
@@ -198,16 +204,10 @@ use border::{
     RoundedDashedBorder, RoundedDoubleDashedBorder, ThickBorder, ThickDashedBorder,
     ThickDoubleDashedBorder,
 };
-
-pub use garnishable::{
-    GarnishableStatefulWidget, GarnishableStatefulWidgetRef, GarnishableWidget,
-    GarnishableWidgetRef,
-};
-
 use shadow::{HalfShadow, Shadow};
 use title::{Above, After, Before, Below, Bottom, Left, Right, Title, Top};
 
-/// A trait that can modify rendering of a widget.
+/// A trait that can modify the rendering of a widget.
 pub trait RenderModifier {
     /// Modifies the widget's rendering area.
     ///
@@ -362,6 +362,15 @@ impl<'a, W> GarnishedWidget<'a, W> {
     }
 }
 
+impl<W: Widget> From<W> for GarnishedWidget<'_, W> {
+    fn from(value: W) -> Self {
+        Self {
+            widget: value,
+            garnishes: Vec::new(),
+        }
+    }
+}
+
 impl<W: Widget> Widget for GarnishedWidget<'_, W> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let mut render_area = area;
@@ -435,6 +444,15 @@ impl<'a, W> GarnishedStatefulWidget<'a, W> {
     }
 }
 
+impl<W: StatefulWidget> From<W> for GarnishedStatefulWidget<'_, W> {
+    fn from(value: W) -> Self {
+        Self {
+            widget: value,
+            garnishes: Vec::new(),
+        }
+    }
+}
+
 impl<W> StatefulWidget for GarnishedStatefulWidget<'_, W>
 where
     W: StatefulWidget,
@@ -480,6 +498,28 @@ where
         }
     }
 }
+
+/// A trait for widgets that can be garnished.
+pub trait GarnishableWidget: Widget + Sized {
+    /// Applies a garnish to the widget, wrapping it in a `GarnishedWidget`.
+    fn garnish<'a, G: Into<Garnish<'a>>>(self, garnish: G) -> GarnishedWidget<'a, Self> {
+        GarnishedWidget::new(self, garnish)
+    }
+}
+
+// Blanket implementation for all widgets that implement `Widget`.
+impl<W: Widget> GarnishableWidget for W {}
+
+/// A trait for stateful widgets that can be garnished.
+pub trait GarnishableStatefulWidget: StatefulWidget + Sized {
+    /// Applies a garnish to the widget, wrapping it in a `GarnishedWidget`.
+    fn garnish<'a, G: Into<Garnish<'a>>>(self, garnish: G) -> GarnishedStatefulWidget<'a, Self> {
+        GarnishedStatefulWidget::new(self, garnish)
+    }
+}
+
+// Blanket implementation for all widgets that implement `StatefulWidget`.
+impl<W: StatefulWidget> GarnishableStatefulWidget for W {}
 
 // RenderModifier implementations for ratatui `Style` & `Padding`
 

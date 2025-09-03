@@ -25,7 +25,7 @@ Want a margin outside a border? Add `Padding` before a border. Need
 multiple titles or a shadow effect? Just garnish! Writing custom
 widgets but dreading the boilerplate for styling or borders?
 Use `ratatui-garnish` with any widget implementing
-`Widget`, `WidgetRef`, `StatefulWidget`, or `StatefulWidgetRef`.
+`Widget` or `StatefulWidget`.
 
 ## Features
 
@@ -155,8 +155,7 @@ assert_eq!(widget.first_padding(), Some(&Padding::uniform(1)));
 ## Compatibility
 
 `ratatui-garnish` integrates seamlessly with Ratatui widgets implementing
-`Widget`, `WidgetRef`, `StatefulWidget`, or `StatefulWidgetRef`,
-following Ratatui's conventions.
+`Widget` or `StatefulWidget` following Ratatui's conventions.
 
 ## Contributing
 
