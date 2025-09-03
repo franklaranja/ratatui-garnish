@@ -34,7 +34,7 @@
 //!     .garnish(HalfShadow::default()); // A thin shadow
 //! ```
 
-use crate::WidgetModifier;
+use crate::RenderModifier;
 use ratatui::layout::{Position, Rect};
 
 /// A Shadow garnish
@@ -95,7 +95,7 @@ impl Default for Shadow {
     }
 }
 
-impl WidgetModifier for Shadow {
+impl RenderModifier for Shadow {
     fn modify_area(&self, area: ratatui::prelude::Rect) -> ratatui::prelude::Rect {
         let width = area
             .width
@@ -191,7 +191,7 @@ impl Default for HalfShadow {
     }
 }
 
-impl WidgetModifier for HalfShadow {
+impl RenderModifier for HalfShadow {
     fn modify_area(&self, area: ratatui::prelude::Rect) -> ratatui::prelude::Rect {
         let x = self.x_offset / 2 + self.x_offset % 2;
         let y = self.y_offset / 2 + self.y_offset % 2;

@@ -17,7 +17,8 @@ categories = [
 readme = "README.md"
 license = "MIT"
 edition = "2024"
-rust-version = "1.85.0"
+# why o why does the following not work? nodyn is 1.85.0 too
+# rust-version = "1.85.0"
 
 [dependencies]
 derive_more = { version = "2.0.0", features = ["deref", "deref_mut", "from"] }

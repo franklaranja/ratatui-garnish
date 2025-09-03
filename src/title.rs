@@ -1,60 +1,78 @@
-//! A garnish that adds a styled text line to a widget at a specified location.
+//! A garnish that adds a styled text line to a widget at a specified position.
 //!
-//! # `Title` comes in four flavors:
+//! # Title Positioning
 //!
-//! - **`Title<Top>`**: renders a `Line` *over* the top line of the
-//!   widget.
-//! - **`Title<Bottom>`** renders a `Line` *over* the bottom line
-//!   of the widget.
-//! - **`Title<Above>`** renders a `Line` above the widget. The
-//!   `Style` of the line is used to set the whole area of
-//!   the top line, excluding the margin.
-//! - **`Title<Below>`** renders a `Line` below the widget. The
-//!   `Style` of the line is used to set the whole area of
-//!   the bottom line, excluding the margin.
+//! `Title` comes in eight positioning variants:
 //!
-//! When using either `Top` or `Bottom`, as it renders over the widget, it is a good idea
-//! to garnish your widget with a border or padding **after applying the title** otherwise
-//! `Title` will render over your widget.
+//! **Overlay positions** (render over the widget):
+//! - **`Title<Top>`**: renders a `Line` over the top line of the widget
+//! - **`Title<Bottom>`**: renders a `Line` over the bottom line of the widget
+//! - **`Title<Left>`**: renders a `Line` over the left edge of the widget (vertical text)
+//! - **`Title<Right>`**: renders a `Line` over the right edge of the widget (vertical text)
+//!
+//! **Reserved space positions** (modify widget area):
+//! - **`Title<Above>`**: renders a `Line` above the widget, reserving space and styling the entire line
+//! - **`Title<Below>`**: renders a `Line` below the widget, reserving space and styling the entire line  
+//! - **`Title<Before>`**: renders a `Line` before the widget (left side), reserving space and styling the entire column
+//! - **`Title<After>`**: renders a `Line` after the widget (right side), reserving space and styling the entire column
+//!
+//! Overlay positions (`Top`, `Bottom`, `Left`, `Right`) are rendered **after**
+//! (is over) the widget.  To prevent the title from obscuring the widget,
+//! apply a border or padding **after applying the title**.
 //!
 //! # Margin
 //!
-//! The `margin` field is used to set the left and right margin. It offers precise
-//! control over the placement of the text. Use margin to prevent titles from overlapping
-//! with the corners of borders.
+//! The `margin` field controls left/right margins for horizontal titles, and top/bottom margins
+//! for vertical titles. Use margins to prevent titles from overlapping with border corners or
+//! to create visual spacing.
 //!
 //! # Style Inheritance
 //!
 //! Titles implement [`Styled`] and support all standard style operations including
-//! patching, resetting, and direct style assignment.
+//! patching, resetting, and direct style assignment. For reserved space positions, the title's
+//! style is applied to the entire reserved area.
 //!
 //! # Examples
 //!
 //! ```rust
-//! use ratatui_garnish::title::{Title, Top, Above};
-//! use ratatui::{style::{Color, Style}, text::Span};
+//! use ratatui_garnish::{
+//!     GarnishableWidget,
+//!     title::{Title, Top, Above, Left},
+//!     border::PlainBorder,
+//! };
+//! use ratatui::{style::{Color, Style}, text::{Span, Text}};
 //!
-//! // Basic title with margin
-//! let title = Title::<Top>::raw("Hello World")
-//!     .margin(2)
-//!     .centered();
+//! // Basic overlay title with margin
+//! let widget = Text::raw("Content")
+//!     .garnish(PlainBorder::default())
+//!     .garnish(Title::<Top>::raw("App Title").margin(1).centered());
 //!
-//! // Styled title
-//! let title = Title::<Above>::styled("Error", Style::default().fg(Color::Red))
-//!     .left_aligned()
-//!     .margin(1);
+//! // Reserved space title with background styling
+//! let widget = Text::raw("Content")
+//!     .garnish(Title::<Above>::styled(
+//!         "Status: Connected",
+//!         Style::default().fg(Color::Green).bg(Color::DarkGray)
+//!     ).centered());
 //!
-//! // Create a styled title with spans
-//! let title = Title::<Above>::default()
-//!     .spans([
-//!         Span::raw("Status: "),
-//!         Span::styled("OK", Style::default().fg(Color::Green))
-//!     ])
-//!     .centered();
+//! // Vertical title on the left
+//! let widget = Text::raw("Main content")
+//!     .garnish(Title::<Left>::raw("Menu").margin(1));
 //!
+//! // Multi-styled title with spans
+//! let widget = Text::raw("Dashboard")
+//!     .garnish(Title::<Above>::default()
+//!         .spans([
+//!             Span::raw("Server: "),
+//!             Span::styled("Online", Style::default().fg(Color::Green)),
+//!             Span::raw(" | Load: "),
+//!             Span::styled("42%", Style::default().fg(Color::Yellow))
+//!         ])
+//!         .left_aligned()
+//!         .margin(2));
+//! ```
 use std::{borrow::Cow, marker::PhantomData};
 
-use crate::WidgetModifier;
+use crate::RenderModifier;
 use derive_more::{Deref, DerefMut};
 use ratatui::{
     buffer::Buffer,
@@ -66,66 +84,79 @@ use ratatui::{
 use unicode_width::UnicodeWidthStr;
 
 /// A wrapper around [`Line`] with additional positioning and margin control.
-/// The generic parameter `Location` determines where the title is rendered relative to the widget.
+///
+/// The generic parameter `Position` determines where the title is rendered relative to the widget.
+/// Different positions behave differently:
+/// - Overlay positions (`Top`, `Bottom`, `Left`, `Right`) render over the widget
+/// - Reserved positions (`Above`, `Below`, `Before`, `After`) reserve space and reduce widget area
 #[derive(Eq, PartialEq, Hash, Deref, DerefMut)]
-pub struct Title<'a, Location: TitlePosition> {
+pub struct Title<'a, Position: TitlePosition> {
     #[deref]
     #[deref_mut]
     line: Line<'a>,
     margin: u8,
-    _position: PhantomData<Location>,
+    _position: PhantomData<Position>,
 }
 
 // ===== Position Marker Types =====
 
-/// Marker trait for title positioning strategies.
+/// Marker trait for title positioning.
 ///
 /// This trait is sealed and can only be implemented by the position types
 /// defined in this module.
 pub trait TitlePosition: private::Sealed {}
 
+/// Renders the title over the widget's top line.
 pub struct Top {}
 
 impl TitlePosition for Top {}
 
+/// Renders the title over the bottom line of the widget.
 pub struct Bottom {}
 
 impl TitlePosition for Bottom {}
 
+/// Renders the title above the widget, reserving space and styling the entire line.
 pub struct Above {}
 
 impl TitlePosition for Above {}
 
+/// Renders the title below the widget, reserving space and styling the entire line.
 pub struct Below {}
 
 impl TitlePosition for Below {}
 
+/// Renders the title over the left edge of the widget (vertical text).
 pub struct Left {}
 
 impl TitlePosition for Left {}
 
+/// Renders the title vertically along the widget's right edge.
 pub struct Right {}
 
 impl TitlePosition for Right {}
 
+/// Renders the title before the widget (left side), reserving space and styling the entire column.
 pub struct Before {}
 
 impl TitlePosition for Before {}
 
+/// Renders the title after the widget (right side), reserving space and styling the entire column.
 pub struct After {}
 
 impl TitlePosition for After {}
 
 // ===== Core Implementation =====
 
-impl<'a, Location: TitlePosition> Title<'a, Location> {
-    /// Creates a new title from a string with default style and margin.
+impl<'a, Position: TitlePosition> Title<'a, Position> {
+    /// Creates a new title from a string with default style and no margin.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// # use ratatui_garnish::title::{Title, Top, Above};
+    /// use ratatui_garnish::title::{Title, Top, Above};
     /// # let username = "Laranja";
+    ///
     /// let title = Title::<Top>::raw("My Application");
     /// let title = Title::<Above>::raw(format!("User: {username}"));
     /// ```
@@ -140,7 +171,7 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         }
     }
 
-    /// Creates a new title with the specified style.
+    /// Creates a new title with the specified style and no margin.
     ///
     /// # Examples
     ///
@@ -164,9 +195,9 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         }
     }
 
-    /// Sets the left and right margin of the title.
+    /// Sets the left and right (or top and bottom for vertical titles) margin.
     ///
-    /// It affects positioning of the title and prevents text from being rendered over that area.
+    /// Margins prevent the title from rendering in the specified edge areas, useful for avoiding overlap with the corners.
     ///
     /// # Examples
     ///
@@ -180,13 +211,15 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         self
     }
 
-    /// Sets the spans of the title.
+    /// Replaces the spans of the title.
+    ///
+    /// This allows creating multi-styled titles by combining different [`Span`]s.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// # use ratatui_garnish::title::{Title, Top};
-    /// # use ratatui::style::{Style, Color};
+    /// use ratatui_garnish::title::{Title, Top};
+    /// use ratatui::style::{Style, Color};
     /// use ratatui::text::Span;
     ///
     /// let title = Title::<Top>::default().spans([
@@ -206,11 +239,14 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
 
     /// Patches the current style by adding modifiers from the given style.
     ///
+    /// Combines the existing style with the provided style, preserving existing attributes unless overridden.
+    ///
     /// # Examples
     ///
     /// ```rust
-    /// # use ratatui_garnish::title::{Title, Top};
-    /// # use ratatui::style::{Style, Color, Stylize};
+    /// use ratatui_garnish::title::{Title, Top};
+    /// use ratatui::style::{Style, Color, Stylize};
+    ///
     /// let title = Title::<Top>::styled("Title", Style::default().fg(Color::Red))
     ///     .patch_style(Style::default().bold()); // Now red and bold
     /// ```
@@ -221,6 +257,8 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
     }
 
     /// Resets the title style to default.
+    ///
+    /// Removes all styling, reverting to the terminal's default appearance.
     ///
     /// # Examples
     ///
@@ -237,10 +275,16 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
 
     /// Sets the alignment for this title.
     ///
+    /// For horizontal titles (`Top`, `Bottom`, `Above`, `Below`), this
+    /// sets left, center, or right alignment.
+    /// For vertical titles (`Left`, `Right`, `Before`, `After`),
+    /// `Left` aligns to the top, `Center` to the middle,
+    /// and `Right` to the bottom.
+    ///
     /// # Examples
     ///
     /// ```rust
-    /// # use ratatui_garnish::title::{Title, Top};
+    /// use ratatui_garnish::title::{Title, Top};
     /// use ratatui::layout::Alignment;
     ///
     /// let title = Title::<Top>::raw("Title")
@@ -252,7 +296,7 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         self
     }
 
-    /// Left-aligns the title.
+    /// Left-aligns the title (or top-aligns for vertical titles).
     ///
     /// # Examples
     ///
@@ -265,7 +309,7 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         self.alignment(Alignment::Left)
     }
 
-    /// Centers the title.
+    /// Centers the title (or middle-aligns for vertical titles).
     ///
     /// # Examples
     ///
@@ -278,7 +322,7 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         self.alignment(Alignment::Center)
     }
 
-    /// Right-aligns the title.
+    /// Right-aligns the title (or bottom-aligns for vertical titles).
     ///
     /// # Examples
     ///
@@ -291,63 +335,22 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         self.alignment(Alignment::Right)
     }
 
-    // /// Converts this title to render on top of the widget.
-    // ///
-    // /// The title will overlay the top line of the widget area.
-    // #[must_use = "method returns a new instance and does not mutate the original"]
-    // pub fn top(self) -> Title<'a, Top> {
-    //     self.convert_position()
-    // }
-    //
-    // /// Converts this title to render on the bottom of the widget.
-    // ///
-    // /// The title will overlay the bottom line of the widget area.
-    // #[must_use = "method returns a new instance and does not mutate the original"]
-    // pub fn bottom(self) -> Title<'a, Bottom> {
-    //     self.convert_position()
-    // }
-    //
-    // /// Converts this title to render above the widget.
-    // ///
-    // /// The title will reserve space above the widget, reducing the widget's area.
-    // #[must_use = "method returns a new instance and does not mutate the original"]
-    // pub fn above(self) -> Title<'a, Above> {
-    //     self.convert_position()
-    // }
-    //
-    // /// Converts this title to render below the widget.
-    // ///
-    // /// The title will reserve space below the widget, reducing the widget's area.
-    // #[must_use = "method returns a new instance and does not mutate the original"]
-    // pub fn below(self) -> Title<'a, Below> {
-    //     self.convert_position()
-    // }
-    //
-    // /// Generic position conversion helper.
-    // fn convert_position<NewLocation: TitlePosition>(self) -> Title<'a, NewLocation> {
-    //     Title {
-    //         line: self.line,
-    //         margin: self.margin,
-    //         _position: PhantomData,
-    //     }
-    // }
-
     /// Calculates the render area for a title positioned at the top.
     ///
-    /// Takes margin into account when determining the available width and position.
+    /// Accounts for margins when determining the available width and position.
     fn calculate_top_area(&self, area: Rect) -> Rect {
         self.calculate_horizontal_area(area, area.y)
     }
 
     /// Calculates the render area for a title positioned at the bottom.
     ///
-    /// Takes margin into account when determining the available width and position.
+    /// Accounts for margins when determining the available width and position.
     fn calculate_bottom_area(&self, area: Rect) -> Rect {
         let y = area.bottom().saturating_sub(1);
         self.calculate_horizontal_area(area, y)
     }
 
-    /// Helper to calculate horizontal positioning with margin consideration.
+    /// Calculates the render area for horizontal titles with margin consideration.
     fn calculate_horizontal_area(&self, area: Rect, y: u16) -> Rect {
         let margin_u16 = u16::from(self.margin);
         let double_margin = margin_u16.saturating_mul(2);
@@ -367,15 +370,18 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         }
     }
 
+    /// Calculates the render area for a title positioned at the left.
     const fn calculate_left_area(&self, area: Rect) -> Rect {
         self.calculate_vertical_area(area, area.x)
     }
 
+    /// Calculates the render area for a title positioned at the right.
     const fn calculate_right_area(&self, area: Rect) -> Rect {
         let x = area.right().saturating_sub(1);
         self.calculate_vertical_area(area, x)
     }
 
+    /// Calculates the render area for vertical titles with margin consideration.
     const fn calculate_vertical_area(&self, area: Rect, x: u16) -> Rect {
         #[allow(clippy::cast_possible_truncation)]
         let margin_u16 = self.margin as u16;
@@ -397,6 +403,7 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
     }
 
     // TODO filter out wide chars?
+    /// Renders text vertically by placing each character on a separate row.
     fn render_vertical(&self, area: Rect, buffer: &mut Buffer, alignment: Alignment) {
         if area.height == 0 {
             return;
@@ -415,7 +422,8 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
         for (i, grapheme) in self.line.styled_graphemes(Style::default()).enumerate() {
             let symbol_width = grapheme.symbol.width();
             let next_y = y.saturating_add(1);
-            let next_x = x.saturating_add(symbol_width as u16);
+            // safety the width of a grapheme should always be much smaller than u16::MAx
+            let next_x = x.saturating_add(u16::try_from(symbol_width).unwrap());
 
             if next_y > area.bottom() {
                 break;
@@ -455,7 +463,7 @@ impl<'a, Location: TitlePosition> Title<'a, Location> {
 
 // ===== Trait Implementations =====
 
-impl<Location: TitlePosition> Styled for Title<'_, Location> {
+impl<Position: TitlePosition> Styled for Title<'_, Position> {
     type Item = Self;
 
     fn style(&self) -> Style {
@@ -471,17 +479,17 @@ impl<Location: TitlePosition> Styled for Title<'_, Location> {
     }
 }
 
-impl<Location: TitlePosition> core::fmt::Debug for Title<'_, Location> {
+impl<Position: TitlePosition> core::fmt::Debug for Title<'_, Position> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Title")
             .field("line", &self.line)
             .field("margin", &self.margin)
-            .field("position", &std::any::type_name::<Location>())
+            .field("position", &std::any::type_name::<Position>())
             .finish()
     }
 }
 
-impl<Location: TitlePosition> Clone for Title<'_, Location> {
+impl<Position: TitlePosition> Clone for Title<'_, Position> {
     fn clone(&self) -> Self {
         Self {
             line: self.line.clone(),
@@ -491,7 +499,7 @@ impl<Location: TitlePosition> Clone for Title<'_, Location> {
     }
 }
 
-impl<Location: TitlePosition> Default for Title<'_, Location> {
+impl<Position: TitlePosition> Default for Title<'_, Position> {
     fn default() -> Self {
         Self {
             line: Line::default(),
@@ -503,7 +511,7 @@ impl<Location: TitlePosition> Default for Title<'_, Location> {
 
 // ===== From Implementations =====
 
-impl<'a, Location: TitlePosition> From<Line<'a>> for Title<'a, Location> {
+impl<'a, Position: TitlePosition> From<Line<'a>> for Title<'a, Position> {
     fn from(line: Line<'a>) -> Self {
         Self {
             line,
@@ -513,25 +521,25 @@ impl<'a, Location: TitlePosition> From<Line<'a>> for Title<'a, Location> {
     }
 }
 
-impl<Location: TitlePosition> From<String> for Title<'_, Location> {
+impl<Position: TitlePosition> From<String> for Title<'_, Position> {
     fn from(s: String) -> Self {
         Self::raw(s)
     }
 }
 
-impl<'a, Location: TitlePosition> From<&'a str> for Title<'a, Location> {
+impl<'a, Position: TitlePosition> From<&'a str> for Title<'a, Position> {
     fn from(s: &'a str) -> Self {
         Self::raw(s)
     }
 }
 
-impl<'a, Location: TitlePosition> From<Cow<'a, str>> for Title<'a, Location> {
+impl<'a, Position: TitlePosition> From<Cow<'a, str>> for Title<'a, Position> {
     fn from(s: Cow<'a, str>) -> Self {
         Self::raw(s)
     }
 }
 
-impl<'a, Location: TitlePosition> From<Vec<Span<'a>>> for Title<'a, Location> {
+impl<'a, Position: TitlePosition> From<Vec<Span<'a>>> for Title<'a, Position> {
     fn from(spans: Vec<Span<'a>>) -> Self {
         Self {
             line: Line {
@@ -544,15 +552,15 @@ impl<'a, Location: TitlePosition> From<Vec<Span<'a>>> for Title<'a, Location> {
     }
 }
 
-impl<'a, Location: TitlePosition> From<Span<'a>> for Title<'a, Location> {
+impl<'a, Position: TitlePosition> From<Span<'a>> for Title<'a, Position> {
     fn from(span: Span<'a>) -> Self {
         Self::from(vec![span])
     }
 }
 
-// ===== WidgetModifier Implementations =====
+// ===== RenderModifier Implementations =====
 
-impl WidgetModifier for Title<'_, Top> {
+impl RenderModifier for Title<'_, Top> {
     fn after_render(&self, area: Rect, buffer: &mut Buffer) {
         let render_area = self.calculate_top_area(area);
         if !render_area.is_empty() {
@@ -561,7 +569,7 @@ impl WidgetModifier for Title<'_, Top> {
     }
 }
 
-impl WidgetModifier for Title<'_, Bottom> {
+impl RenderModifier for Title<'_, Bottom> {
     fn after_render(&self, area: Rect, buffer: &mut Buffer) {
         let render_area = self.calculate_bottom_area(area);
         if !render_area.is_empty() {
@@ -570,7 +578,7 @@ impl WidgetModifier for Title<'_, Bottom> {
     }
 }
 
-impl WidgetModifier for Title<'_, Above> {
+impl RenderModifier for Title<'_, Above> {
     fn before_render(&self, area: Rect, buffer: &mut Buffer) {
         let render_area = self.calculate_top_area(area);
         if !render_area.is_empty() {
@@ -588,7 +596,7 @@ impl WidgetModifier for Title<'_, Above> {
     }
 }
 
-impl WidgetModifier for Title<'_, Below> {
+impl RenderModifier for Title<'_, Below> {
     fn before_render(&self, area: Rect, buffer: &mut Buffer) {
         let render_area = self.calculate_bottom_area(area);
         if !render_area.is_empty() {
@@ -605,7 +613,7 @@ impl WidgetModifier for Title<'_, Below> {
     }
 }
 
-impl WidgetModifier for Title<'_, Left> {
+impl RenderModifier for Title<'_, Left> {
     fn after_render(&self, area: Rect, buffer: &mut Buffer) {
         let render_area = self.calculate_left_area(area);
         if !render_area.is_empty() {
@@ -618,7 +626,7 @@ impl WidgetModifier for Title<'_, Left> {
     }
 }
 
-impl WidgetModifier for Title<'_, Right> {
+impl RenderModifier for Title<'_, Right> {
     fn after_render(&self, area: Rect, buffer: &mut Buffer) {
         let render_area = self.calculate_right_area(area);
         if !render_area.is_empty() {
@@ -631,7 +639,7 @@ impl WidgetModifier for Title<'_, Right> {
     }
 }
 
-impl WidgetModifier for Title<'_, Before> {
+impl RenderModifier for Title<'_, Before> {
     fn before_render(&self, area: Rect, buffer: &mut Buffer) {
         let render_area = self.calculate_left_area(area);
         if !render_area.is_empty() {
@@ -653,7 +661,7 @@ impl WidgetModifier for Title<'_, Before> {
     }
 }
 
-impl WidgetModifier for Title<'_, After> {
+impl RenderModifier for Title<'_, After> {
     fn before_render(&self, area: Rect, buffer: &mut Buffer) {
         let render_area = self.calculate_right_area(area);
         if !render_area.is_empty() {
@@ -888,5 +896,45 @@ mod tests {
         assert_eq!(below_modified.height, 9);
         assert_eq!(below_modified.x, area.x);
         assert_eq!(below_modified.width, area.width);
+
+        // Before should reduce width and move x right
+        let before_title = Title::<Before>::raw("Test");
+        let before_modified = before_title.modify_area(area);
+        assert_eq!(before_modified.x, 6);
+        assert_eq!(before_modified.width, 19);
+        assert_eq!(before_modified.y, area.y);
+        assert_eq!(before_modified.height, area.height);
+
+        // After should only reduce width
+        let after_title = Title::<After>::raw("Test");
+        let after_modified = after_title.modify_area(area);
+        assert_eq!(after_modified.x, area.x);
+        assert_eq!(after_modified.width, 19);
+        assert_eq!(after_modified.y, area.y);
+        assert_eq!(after_modified.height, area.height);
+    }
+
+    #[test]
+    fn vertical_title_rendering() {
+        let mut buffer = create_test_buffer(3, 10);
+        let area = Rect::new(0, 0, 3, 10);
+
+        // Test Left title rendering, centered
+        let left_title = Title::<Left>::raw("ABC").centered();
+        left_title.after_render(area, &mut buffer);
+
+        // Should render vertically, centered (y=3 to y=5 for "ABC")
+        assert_eq!(buffer[(0, 3)].symbol(), "A");
+        assert_eq!(buffer[(0, 4)].symbol(), "B");
+        assert_eq!(buffer[(0, 5)].symbol(), "C");
+
+        // Test Right title rendering, bottom-aligned
+        let right_title = Title::<Right>::raw("XYZ").right_aligned();
+        right_title.after_render(area, &mut buffer);
+
+        // Should render vertically, bottom-aligned (y=7 to y=9 for "XYZ")
+        assert_eq!(buffer[(2, 7)].symbol(), "X");
+        assert_eq!(buffer[(2, 8)].symbol(), "Y");
+        assert_eq!(buffer[(2, 9)].symbol(), "Z");
     }
 }

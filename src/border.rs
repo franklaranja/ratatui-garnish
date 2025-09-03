@@ -1,9 +1,9 @@
 //! Border Garnishes
 //!
-//! A border is composed of a a set of characters used to draw the border,
+//! A border is composed of a set of characters used to draw the border,
 //! a `BorderSet` and a bitflags struct [`Borders`] (from `ratatui`) to
-//! congigure which borders to render. Border doesn't have a `Style`, set
-//! the style of your border with the `Style` garnish.
+//! configure which borders to render. Borders don't have their own [`Style`](ratatui::style::Style);
+//! set the style of your border with the `Style` garnish instead.
 //!
 //! # Example
 //! ```rust
@@ -18,9 +18,9 @@
 //!
 //! # Standard Borders
 //!
-//! Standard borders are simple wrappers around `Borders`. The
-//! `default` returns a border with all borders enabled. Use
-//! `new` to select your borders:
+//! Standard borders are simple wrappers around [`Borders`]. The
+//! `default` implementation returns a border with all borders enabled. Use
+//! `new` to select specific borders.
 //!
 //! ## Example
 //!
@@ -34,8 +34,8 @@
 //!     .garnish(PlainBorder::new(Borders::TOP | Borders::BOTTOM));
 //! ```
 //!
-//! Standard borders implement `Deref` and `DerefMut`. So
-//! you can call some methods from `Borders` on a standard border:
+//! Standard borders implement `Deref` and `DerefMut`, allowing
+//! direct calls to `Borders` methods:
 //!
 //! ```rust
 //! # use ratatui_garnish::border::PlainBorder;
@@ -54,7 +54,7 @@
 //!
 //! # `CharBorder`
 //!
-//! For creating a border composed from a single character use
+//! For creating a border composed of a single character, use
 //! `CharBorder`:
 //!
 //! ```rust
@@ -66,9 +66,9 @@
 //!
 //! # `CustomBorder`
 //!
-//! With `CustomBorder` you can your own `BorderSet` for defining
-//! your border. You can use one of the standard border constructors
-//! to adapt them to your wishes.
+//! With `CustomBorder` you can use your own `BorderSet` to define
+//! a border. You can start with one of the standard border constructors
+//! and adapt it as needed.
 //!
 //! ```rust
 //! use ratatui_garnish::border::{BorderSet, CustomBorder};
@@ -79,7 +79,13 @@
 use derive_more::{Deref, DerefMut};
 use ratatui::{buffer::Buffer, layout::Rect, widgets::Borders};
 
-/// Trait for rendering borders around terminal UI elements.
+/// Trait for rendering borders around ratatui widgets.
+///
+/// This trait defines methods for retrieving the border configuration
+///  ([`Borders`]) and character set ([`BorderSet`]), which are used
+///  to render a border. The other methods are used byas well as rendering individual border segments
+/// and corners. Implementors can customize rendering behavior if needed,
+/// but the default implementations should suffice for most cases.
 pub trait Border {
     /// Returns the character set used for rendering.
     fn get_border_set(&self) -> BorderSet;
@@ -140,25 +146,25 @@ pub trait Border {
     }
 }
 
-impl<T: Border> crate::WidgetModifier for T {
+impl<T: Border> crate::RenderModifier for T {
     fn before_render(&self, area: Rect, buffer: &mut Buffer) {
         let borders = self.get_borders();
-        let charset = self.get_border_set();
+        let border_set = self.get_border_set();
 
         if borders.contains(Borders::LEFT) {
-            self.render_left(area, buffer, charset.left);
+            self.render_left(area, buffer, border_set.left);
         }
         if borders.contains(Borders::TOP) {
-            self.render_top(area, buffer, charset.top);
+            self.render_top(area, buffer, border_set.top);
         }
         if borders.contains(Borders::RIGHT) {
-            self.render_right(area, buffer, charset.right);
+            self.render_right(area, buffer, border_set.right);
         }
         if borders.contains(Borders::BOTTOM) {
-            self.render_bottom(area, buffer, charset.bottom);
+            self.render_bottom(area, buffer, border_set.bottom);
         }
 
-        self.render_corners(area, buffer, &charset);
+        self.render_corners(area, buffer, &border_set);
     }
 
     fn modify_area(&self, area: Rect) -> Rect {
@@ -194,10 +200,10 @@ impl<T: Border> crate::WidgetModifier for T {
 /// ```rust
 /// use ratatui_garnish::border::BorderSet;
 ///
-/// // Use a predefined style
+/// // Use a predefined set
 /// let rounded = BorderSet::rounded();
 ///
-/// // Customize a style
+/// // Customize a set
 /// let custom = BorderSet::plain()
 ///     .corners('*')
 ///     .horizontals('=');
@@ -648,7 +654,7 @@ standard_border!(FatOutsideBorder, fat_outside, "A fat outside border.");
 /// use ratatui::widgets::Borders;
 /// use ratatui_garnish::border::CharBorder;
 ///
-/// let star_border = CharBorder::new('*');
+/// let star_border = CharBorder::new('*'); // All sides with '*'
 /// let hash_border = CharBorder::new('#').borders(Borders::TOP | Borders::BOTTOM);
 /// ```
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -658,7 +664,7 @@ pub struct CharBorder {
 }
 
 impl Default for CharBorder {
-    /// Creates a border with all sides enabled (`Borders::ALL`).
+    /// Creates a border with all sides enabled (`Borders::ALL`) and space as the symbol.
     fn default() -> Self {
         Self {
             symbol: ' ',
@@ -670,7 +676,10 @@ impl Default for CharBorder {
 impl CharBorder {
     /// Creates a new border using the specified symbol for all sides.
     ///
+    /// By default, uses `Borders::ALL`.
+    ///
     /// # Example
+    ///
     /// ```
     /// use ratatui_garnish::border::CharBorder;
     ///
@@ -687,6 +696,7 @@ impl CharBorder {
     /// Sets which borders to render.
     ///
     /// # Example
+    ///
     /// ```
     /// use ratatui_garnish::border::{CharBorder, Border};
     /// use ratatui::widgets::Borders;
@@ -720,9 +730,10 @@ impl Border for CharBorder {
 ///
 /// ```rust
 /// use ratatui_garnish::border::{BorderSet, CustomBorder};
+/// use ratatui::widgets::Borders;
 ///
 /// let custom_set = BorderSet::plain().corners('*').horizontals('=');
-/// let border = CustomBorder::new(custom_set);
+/// let border = CustomBorder::new(custom_set).borders(Borders::ALL);
 /// ```
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct CustomBorder {
@@ -744,6 +755,8 @@ impl Default for CustomBorder {
 
 impl CustomBorder {
     /// Creates a new custom border with the specified character set.
+    ///
+    /// By default, uses `Borders::ALL`.
     #[must_use = "constructor returns a new instance"]
     pub fn new(char_set: BorderSet) -> Self {
         Self {
@@ -773,41 +786,41 @@ impl Border for CustomBorder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::WidgetModifier;
+    use crate::RenderModifier;
 
     fn create_test_buffer(width: u16, height: u16) -> Buffer {
         Buffer::empty(Rect::new(0, 0, width, height))
     }
 
     #[test]
-    fn char_set_new_creates_uniform_set() {
-        let char_set = BorderSet::new('*');
+    fn border_set_new_creates_uniform_set() {
+        let border_set = BorderSet::new('*');
 
-        assert_eq!(char_set.top_left, '*');
-        assert_eq!(char_set.top_right, '*');
-        assert_eq!(char_set.bottom_left, '*');
-        assert_eq!(char_set.bottom_right, '*');
-        assert_eq!(char_set.left, '*');
-        assert_eq!(char_set.right, '*');
-        assert_eq!(char_set.top, '*');
-        assert_eq!(char_set.bottom, '*');
+        assert_eq!(border_set.top_left, '*');
+        assert_eq!(border_set.top_right, '*');
+        assert_eq!(border_set.bottom_left, '*');
+        assert_eq!(border_set.bottom_right, '*');
+        assert_eq!(border_set.left, '*');
+        assert_eq!(border_set.right, '*');
+        assert_eq!(border_set.top, '*');
+        assert_eq!(border_set.bottom, '*');
     }
 
     #[test]
-    fn char_set_modifiers_work_correctly() {
-        let char_set = BorderSet::plain()
+    fn border_set_modifiers_work_correctly() {
+        let border_set = BorderSet::plain()
             .corners('*')
             .verticals('|')
             .horizontals('-');
 
-        assert_eq!(char_set.top_left, '*');
-        assert_eq!(char_set.top_right, '*');
-        assert_eq!(char_set.bottom_left, '*');
-        assert_eq!(char_set.bottom_right, '*');
-        assert_eq!(char_set.left, '|');
-        assert_eq!(char_set.right, '|');
-        assert_eq!(char_set.top, '-');
-        assert_eq!(char_set.bottom, '-');
+        assert_eq!(border_set.top_left, '*');
+        assert_eq!(border_set.top_right, '*');
+        assert_eq!(border_set.bottom_left, '*');
+        assert_eq!(border_set.bottom_right, '*');
+        assert_eq!(border_set.left, '|');
+        assert_eq!(border_set.right, '|');
+        assert_eq!(border_set.top, '-');
+        assert_eq!(border_set.bottom, '-');
     }
 
     #[test]
@@ -918,17 +931,17 @@ mod tests {
     }
 
     #[test]
-    fn custom_border_works_with_modified_char_set() {
-        let custom_char_set = BorderSet::plain().corners('*').horizontals('=');
+    fn custom_border_works_with_modified_border_set() {
+        let custom_border_set = BorderSet::plain().corners('*').horizontals('=');
         let custom_border =
-            CustomBorder::new(custom_char_set).borders(Borders::TOP | Borders::LEFT);
+            CustomBorder::new(custom_border_set).borders(Borders::TOP | Borders::LEFT);
 
         assert_eq!(custom_border.get_borders(), Borders::TOP | Borders::LEFT);
 
-        let char_set = custom_border.get_border_set();
-        assert_eq!(char_set.top_left, '*');
-        assert_eq!(char_set.top, '=');
-        assert_eq!(char_set.left, '│'); // Unchanged from plain()
+        let border_set = custom_border.get_border_set();
+        assert_eq!(border_set.top_left, '*');
+        assert_eq!(border_set.top, '=');
+        assert_eq!(border_set.left, '│'); // Unchanged from plain()
     }
 
     #[test]

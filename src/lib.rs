@@ -45,12 +45,12 @@
 //! This trait adds the garnish function to any ratatui [`Widget`], there are similar traits
 //! for [`WidgetRef`], [`StatefulWidget`] and [`StatefulWidgetRef`].
 //!
-//! The [`WidgetModifier`] trait specifies what a garnish does. Ratatui-garnish implements
+//! The [`RenderModifier`] trait specifies what a garnish does. Ratatui-garnish implements
 //! this trait for [`Style`] and [`Padding`] from ratatui. So you can use them
 //! as garlnishes:
 //!
 //! ```rust
-//! use ratatui_garnish::{GarnishableWidget, WidgetModifier};
+//! use ratatui_garnish::{GarnishableWidget, RenderModifier};
 //! use ratatui::{style::{Style, Color}, text::Line, widgets::Padding};
 //!
 //! let widget = Line::raw("Hello, World!")         // create widget
@@ -68,7 +68,7 @@
 //! `Garnishes` which is an enum that wraps all available garnishes.
 //!
 //! ```rust
-//! # use ratatui_garnish::{GarnishableWidget, WidgetModifier};
+//! # use ratatui_garnish::{GarnishableWidget, RenderModifier};
 //! # use ratatui::{style::{Style, Color}, text::Line, widgets::Padding};
 //! #
 //! # let widget = Line::raw("Hello, World!")
@@ -110,7 +110,7 @@
 //!
 //! ```rust
 //! use ratatui_garnish::{
-//!     GarnishableWidget, WidgetModifier,
+//!     GarnishableWidget, RenderModifier,
 //!     title::{Title, Top, Bottom,},
 //!     border::DoubleBorder,
 //! };
@@ -140,7 +140,7 @@
 //!
 //! ```rust
 //! use ratatui_garnish::{
-//!     GarnishableWidget, WidgetModifier,
+//!     GarnishableWidget, RenderModifier,
 //!     title::{Title, Top},
 //!     border::DoubleBorder, garnishes,
 //! };
@@ -212,7 +212,7 @@ use shadow::{HalfShadow, Shadow};
 use title::{Above, After, Before, Below, Bottom, Left, Right, Title, Top};
 
 /// A trait for widget garnishes that can transform rendering and layout.
-pub trait WidgetModifier {
+pub trait RenderModifier {
     /// Modifies the rendering area for the widget.
     /// Default implementation returns the input area unchanged.
     fn modify_area(&self, area: Rect) -> Rect {
@@ -265,7 +265,7 @@ nodyn::nodyn! {
 
     impl is_as;
 
-    impl WidgetModifier {
+    impl RenderModifier {
         fn before_render(&self, area: Rect, buf: &mut Buffer);
         fn modify_area(&self, area: Rect) -> Rect;
         fn after_render(&self, area: Rect, buf: &mut Buffer);
@@ -276,7 +276,7 @@ nodyn::nodyn! {
     ///
     /// ```rust
     /// use ratatui_garnish::{
-    ///     GarnishableWidget, WidgetModifier,
+    ///     GarnishableWidget, RenderModifier,
     ///     title::{Title, Top},
     ///     border::DoubleBorder, garnishes,
     /// };
@@ -431,15 +431,15 @@ where
     }
 }
 
-// WidgetModifier implementations for ratatui `Style` & `Padding`
+// RenderModifier implementations for ratatui `Style` & `Padding`
 
-impl WidgetModifier for Style {
+impl RenderModifier for Style {
     fn before_render(&self, area: Rect, buf: &mut Buffer) {
         buf.set_style(area, *self);
     }
 }
 
-impl WidgetModifier for Padding {
+impl RenderModifier for Padding {
     fn modify_area(&self, area: Rect) -> Rect {
         Rect {
             x: area.x + self.left,

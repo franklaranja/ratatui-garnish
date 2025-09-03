@@ -22,7 +22,6 @@ pub trait GarnishableWidgetRef: WidgetRef + Sized {
 
 // Blanket implementation for all widgets that implement `WidgetRef`.
 impl<W: WidgetRef> GarnishableWidgetRef for W {}
-// WidgetModifier implementations for ratatui `Style`, `Block` & `Padding`
 
 /// A trait for widgets that can be garnished with decorators.
 pub trait GarnishableStatefulWidget: StatefulWidget + Sized {
