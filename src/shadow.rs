@@ -1,9 +1,9 @@
 //! Shadow garnishes
 //!
-//! A `Shadow` garnish draws a shadow for your widget using
-//! the unicode shade characters light '░', medium '▒', dark '▓'
-//! or full '█' using the given offset. The color can be set using a
-//! `Style` garnish:
+//! A `Shadow` garnish draws a drop shadow for your widget using
+//! Unicode shade characters: light '░', medium '▒', dark '▓',
+//! or full '█' with the specified offset. The shadow color can be
+//! styled using a `Style` garnish.
 //!
 //! # Example
 //!
@@ -12,16 +12,21 @@
 //! use ratatui_garnish::GarnishableWidget;
 //! use ratatui_garnish::shadow::Shadow;
 //!
-//! let widget = Text::raw("Hello, world")
+//! // Light blue shadow offset by 3 columns, 2 rows
+//! let widget = Text::raw("Hello, world!")
 //!     .garnish(Style::default().fg(Color::Blue))
-//!     .garnish(Shadow::new(3,2).light()); // A light blue, shadow
+//!     .garnish(Shadow::new(3, 2).light());
+//!     
+//! // Dark shadow with default offset (1, 1)
+//! let widget = Text::raw("Button")
+//!     .garnish(Shadow::default().dark());
 //! ```
 //!
 //! # `HalfShadow`
 //!
-//! Half refers to the size: the offset is given in half character
-//! lengths. As there are no half versions of the shade characters
-//! it is only avaible using the full shade.
+//! `HalfShadow` provides sub-character precision by specifying offsets
+//! in half-character lengths. It uses various Unicode block characters
+//! to create smooth shadow edges. Only full-opacity shadows are supported.
 //!
 //! # Example
 //!
@@ -30,14 +35,22 @@
 //! use ratatui_garnish::GarnishableWidget;
 //! use ratatui_garnish::shadow::HalfShadow;
 //!
-//! let widget = Text::raw("Hello, world")
-//!     .garnish(HalfShadow::default()); // A thin shadow
+//! // Subtle shadow with 0.5 character offset
+//! let widget = Text::raw("Smooth text")
+//!     .garnish(HalfShadow::default());
+//!     
+//! // Larger shadow with 1.5 character horizontal, 1 character vertical offset
+//! let widget = Text::raw("Dialog box")
+//!     .garnish(HalfShadow::new(3, 2));
 //! ```
-
 use crate::RenderModifier;
 use ratatui::layout::{Position, Rect};
 
-/// A Shadow garnish
+/// A shadow garnish that renders a drop shadow using Unicode shade characters.
+///
+/// The shadow is drawn with a specified character (`░`, `▒`, `▓`, or `█`) at the given offsets.
+/// Offsets are in full character lengths, with positive values shifting the shadow right and down,
+/// and negative values shifting it left and up.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Shadow {
     x_offset: i8,
@@ -46,7 +59,19 @@ pub struct Shadow {
 }
 
 impl Shadow {
-    /// create a medium `Shadow` with the given offsets.
+    /// Creates a medium shadow with the given offsets.
+    ///
+    /// # Arguments
+    ///
+    /// * `x_offset` - Horizontal offset in character columns (positive = right)
+    /// * `y_offset` - Vertical offset in character rows (positive = down)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use ratatui_garnish::shadow::Shadow;
+    /// let shadow = Shadow::new(2, 1); // 2 columns right, 1 row down
+    /// ```
     #[must_use = "method returns a new instance"]
     pub fn new(x_offset: i8, y_offset: i8) -> Self {
         Self {
@@ -56,28 +81,56 @@ impl Shadow {
         }
     }
 
-    /// Change `Shadow` to light: '░'.
+    /// Sets the shadow to use the light shade character (`░`).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use ratatui_garnish::shadow::Shadow;
+    /// let shadow = Shadow::new(1, 1).light();
+    /// ```
     #[must_use = "method returns a new instance and does not mutate the original"]
     pub const fn light(mut self) -> Self {
         self.symbol = '░';
         self
     }
 
-    /// Change `Shadow` to medium: '▒'.
+    /// Sets the shadow to use the medium shade character (`▒`).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use ratatui_garnish::shadow::Shadow;
+    /// let shadow = Shadow::new(1, 1).medium();
+    /// ```
     #[must_use = "method returns a new instance and does not mutate the original"]
     pub const fn medium(mut self) -> Self {
         self.symbol = '▒';
         self
     }
 
-    /// Change `Shadow` to dark: '▓'.
+    /// Sets the shadow to use the dark shade character (`▓`).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use ratatui_garnish::shadow::Shadow;
+    /// let shadow = Shadow::new(1, 1).dark();
+    /// ```
     #[must_use = "method returns a new instance and does not mutate the original"]
     pub const fn dark(mut self) -> Self {
         self.symbol = '▓';
         self
     }
 
-    /// Change `Shadow` to full: '█'.
+    /// Sets the shadow to use the full shade character (`█`).
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use ratatui_garnish::shadow::Shadow;
+    /// let shadow = Shadow::new(1, 1).full();
+    /// ```
     #[must_use = "method returns a new instance and doqes not mutate the original"]
     pub const fn full(mut self) -> Self {
         self.symbol = '█';
@@ -86,6 +139,7 @@ impl Shadow {
 }
 
 impl Default for Shadow {
+    /// Creates a `Shadow` with medium shade (`▒`) and offsets of 1, 1.
     fn default() -> Self {
         Self {
             x_offset: 1,
@@ -163,9 +217,11 @@ impl RenderModifier for Shadow {
     }
 }
 
-/// Renders a shadow for your widget using half character
-/// offset, only using full type shadow. Default creates
-/// a `HalfShadow` with an offset of 1, 1.
+/// Renders a shadow with sub-character precision using half-character offsets.
+///
+/// Uses the full shade character (`█`) for whole character offsets and half or quadrant characters
+/// (e.g., `▗`, `▖`) for half-character offsets, allowing finer positioning control.
+/// Offsets are specified in half-character lengths (e.g., `3` means 1.5 characters).
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct HalfShadow {
     x_offset: i8,
@@ -173,9 +229,18 @@ pub struct HalfShadow {
 }
 
 impl HalfShadow {
-    /// Create a shadow using the offsets given.
-    /// The offsets are given in half character lengths:
-    /// e.g. an offset of 3 means 1.5 characters.
+    /// Creates a shadow using the given half-character offsets.
+    ///
+    /// Offsets are in half-character lengths (e.g., `3` means 1.5 characters).
+    /// Positive offsets shift the shadow right and down; negative offsets shift it left and up.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// # use ratatui_garnish::shadow::HalfShadow;
+    /// // 1.5 character right, 1.0 character down
+    /// let shadow = HalfShadow::new(3, 2);
+    /// ```
     #[must_use = "method returns a new instance"]
     pub const fn new(x_offset: i8, y_offset: i8) -> Self {
         Self { x_offset, y_offset }
@@ -183,6 +248,7 @@ impl HalfShadow {
 }
 
 impl Default for HalfShadow {
+    /// Creates a `HalfShadow` with offsets of 1, 1 (0.5 characters each).
     fn default() -> Self {
         Self {
             x_offset: 1,
