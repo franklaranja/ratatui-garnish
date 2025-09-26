@@ -1,18 +1,18 @@
 use crossterm::event::{self, Event};
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Modifier, Style},
     text::Line,
     widgets::{Padding, Paragraph},
-    Frame,
 };
 
-use ratatui_garnish::{garnishes, GarnishedWidget};
+use ratatui_garnish::{GarnishedWidget, garnishes};
 
 use palette::{
-    BLUE100, BLUE200, BLUE300, BLUE400, BLUE500, BLUE600, BLUE700, BLUE800, BLUE900, ORANGE200,
-    ORANGE400, ORANGE50, ORANGE500, ORANGE600,
+    BLUE100, BLUE200, BLUE300, BLUE400, BLUE500, BLUE600, BLUE700, BLUE800, BLUE900, ORANGE50,
+    ORANGE200, ORANGE400, ORANGE500, ORANGE600,
 };
 
 fn main() {

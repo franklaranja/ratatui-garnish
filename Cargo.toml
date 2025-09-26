@@ -21,7 +21,7 @@ edition = "2024"
 # rust-version = "1.85.0"
 
 [dependencies]
-derive_more = { version = "2.0.0", features = ["deref", "deref_mut", "from"] }
+derive_more = { version = "2.0.1", features = ["deref", "deref_mut", "from"] }
 nodyn = { version = "0.2.2", default-features = false }
 ratatui = { version = "0.29.0", features = ["unstable-widget-ref", "unstable-rendered-line-info"] }
 unicode-width = "0.2.0"

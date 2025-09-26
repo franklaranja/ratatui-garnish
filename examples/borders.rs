@@ -1,19 +1,20 @@
 use crossterm::event::{self, Event};
 
 use ratatui::{
+    Frame,
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::Line,
     widgets::{Borders, Padding, Paragraph},
-    Frame,
 };
 
 use ratatui_garnish::{
+    GarnishedWidget,
     border::{BorderSet, CharBorder, CustomBorder, PlainBorder},
-    garnishes, GarnishedWidget,
+    garnishes,
 };
 
-use palette::{BLUE900, GREEN500, GREEN600, GREEN700, ORANGE200, ORANGE400, ORANGE50, ORANGE500};
+use palette::{BLUE900, GREEN500, GREEN600, GREEN700, ORANGE50, ORANGE200, ORANGE400, ORANGE500};
 
 fn main() {
     let mut terminal = ratatui::init();

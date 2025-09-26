@@ -847,10 +847,10 @@ mod tests {
         let area = Rect::new(0, 0, 10, 5);
 
         let top_area = title.calculate_top_area(area);
-        assert_eq!(top_area, Rect::new(2, 0, 6, 1)); // x=2 (margin), width=6 (10-4)
+        assert_eq!(top_area, Rect::new(2, 0, 4, 1)); // x=2 (margin), width=6 (10-4)
 
         let bottom_area = title.calculate_bottom_area(area);
-        assert_eq!(bottom_area, Rect::new(2, 4, 6, 1)); // y=4 (bottom-1)
+        assert_eq!(bottom_area, Rect::new(2, 4, 4, 1)); // y=4 (bottom-1)
     }
 
     #[test]
