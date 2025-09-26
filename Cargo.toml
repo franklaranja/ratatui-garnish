@@ -54,3 +54,6 @@ string_to_string = "warn"
 unnecessary_self_imports = "warn"
 use_self = "warn"
 as_underscore = "warn"
+
+[dev-dependencies]
+crossterm = "0.29.0"
