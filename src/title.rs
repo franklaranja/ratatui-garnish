@@ -342,6 +342,13 @@ impl<'a, Position: TitlePosition> Title<'a, Position> {
         self.calculate_horizontal_area(area, area.y)
     }
 
+    /// Calculates the render area for a title positioned above.
+    ///
+    /// Accounts for margins when determining the available width and position.
+    fn calculate_above_area(&self, area: Rect) -> Rect {
+        self.calculate_horizontal_full_area(area, area.y)
+    }
+
     /// Calculates the render area for a title positioned at the bottom.
     ///
     /// Accounts for margins when determining the available width and position.
@@ -350,8 +357,16 @@ impl<'a, Position: TitlePosition> Title<'a, Position> {
         self.calculate_horizontal_area(area, y)
     }
 
+    /// Calculates the render area for a title positioned at the bottom.
+    ///
+    /// Accounts for margins when determining the available width and position.
+    fn calculate_below_area(&self, area: Rect) -> Rect {
+        let y = area.bottom().saturating_sub(1);
+        self.calculate_horizontal_full_area(area, y)
+    }
+
     /// Calculates the render area for horizontal titles with margin consideration.
-    fn calculate_horizontal_area(&self, area: Rect, y: u16) -> Rect {
+    fn calculate_horizontal_full_area(&self, area: Rect, y: u16) -> Rect {
         let margin_u16 = u16::from(self.margin);
         let double_margin = margin_u16.saturating_mul(2);
 
@@ -366,6 +381,41 @@ impl<'a, Position: TitlePosition> Title<'a, Position> {
             x,
             y,
             width,
+            height: 1,
+        }
+    }
+
+    fn calculate_horizontal_area(&self, area: Rect, y: u16) -> Rect {
+        let margin_u16 = u16::from(self.margin);
+        let double_margin = margin_u16.saturating_mul(2);
+
+        if area.width <= double_margin {
+            return Rect::ZERO;
+        }
+
+        let available_width = area.width.saturating_sub(double_margin);
+        let line_width = u16::try_from(self.line.width()).unwrap_or(u16::MAX);
+        let x = area.x.saturating_add(margin_u16);
+
+        if available_width < line_width {
+            return Rect {
+                x,
+                y,
+                width: available_width,
+                height: 1,
+            };
+        }
+
+        let indent_width = match self.line.alignment {
+            Some(Alignment::Center) => area.width.saturating_sub(line_width) / 2,
+            Some(Alignment::Right) => area.width.saturating_sub(line_width),
+            Some(Alignment::Left) | None => 0,
+        };
+
+        Rect {
+            x: x.saturating_add(indent_width),
+            y,
+            width: line_width,
             height: 1,
         }
     }
@@ -580,7 +630,7 @@ impl RenderModifier for Title<'_, Bottom> {
 
 impl RenderModifier for Title<'_, Above> {
     fn before_render(&self, area: Rect, buffer: &mut Buffer) {
-        let render_area = self.calculate_top_area(area);
+        let render_area = self.calculate_above_area(area);
         if !render_area.is_empty() {
             buffer.set_style(render_area, self.line.style);
             self.line.render_ref(render_area, buffer);
@@ -598,7 +648,7 @@ impl RenderModifier for Title<'_, Above> {
 
 impl RenderModifier for Title<'_, Below> {
     fn before_render(&self, area: Rect, buffer: &mut Buffer) {
-        let render_area = self.calculate_bottom_area(area);
+        let render_area = self.calculate_below_area(area);
         if !render_area.is_empty() {
             buffer.set_style(render_area, self.line.style);
             self.line.render_ref(render_area, buffer);
