@@ -127,7 +127,7 @@ assert_eq!(widget.first_padding(), Some(&Padding::uniform(1)));
 
 ### Borders
 - **Standard**: `PlainBorder`, `RoundedBorder`, `DoubleBorder`, `ThickBorder`
-- **Dashed Variants**: `DashedBorder`, `RoundedDashedBorder`, `ThickDashedBorder`, `DoubleDashedBorder`, `RoundedDoubleDashedBorder`, `ThickDoubleDashedBorder`
+- **Dashed Variants**: `DashedBorder`, `RoundedDashedBorder`, `ThickDashedBorder`,
 - **Custom**: `CharBorder` (single character, e.g., `****`), `CustomBorder` (custom character set)
 - **Specialty**: `QuadrantInsideBorder`, `QuadrantOutsideBorder`, `FatInsideBorder`, `FatOutsideBorder`
 

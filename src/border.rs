@@ -47,10 +47,9 @@
 //!
 //! There is a standard border for every constructor of `BorderSet`
 //! that doesn't need arguments: `PlainBorder`, `DashedBorder`,
-//! `DoubleBorder`, `DoubleDashedBorder`, `FatInsideBorder`,
-//! `FatOutsideBorder`, `QuadrantInsideBorder`, `QuadrantOutsideBorder`,
-//! `RoundedBorder`, `RoundedDashedBorder`, `RoundedDoubleDashedBorder`,
-//! `ThickBorder`, `ThickDashedBorder` and `ThickDoubleDashedBorder`.
+//! `DoubleBorder`, `FatInsideBorder`, `FatOutsideBorder`, `QuadrantInsideBorder`,
+//! `QuadrantOutsideBorder`, `RoundedBorder`, `RoundedDashedBorder`,
+//! `ThickBorder` and `ThickDashedBorder`.
 //!
 //! # `CharBorder`
 //!
@@ -279,19 +278,7 @@ impl BorderSet {
     /// ```
     #[must_use = "constructor returns a new instance"]
     pub const fn dashed() -> Self {
-        Self::plain().horizontals('╌').verticals('┆')
-    }
-
-    /// Creates a double dashed border set.
-    ///
-    /// ```text
-    /// ┌┄┄┄┄┄┄┄┐
-    /// ┊       ┊
-    /// └┄┄┄┄┄┄┄┘
-    /// ```
-    #[must_use = "constructor returns a new instance"]
-    pub const fn double_dashed() -> Self {
-        Self::plain().horizontals('┄').verticals('┊')
+        Self::plain().horizontals('╌').verticals('┊')
     }
 
     /// Creates a plain border set with rounded corners.
@@ -324,19 +311,7 @@ impl BorderSet {
     /// ```
     #[must_use = "constructor returns a new instance"]
     pub const fn rounded_dashed() -> Self {
-        Self::rounded().horizontals('╌').verticals('┆')
-    }
-
-    /// Creates a rounded double dashed border set.
-    ///
-    /// ```text
-    /// ╭┄┄┄┄┄┄┄╮
-    /// ┊       ┊
-    /// ╰┄┄┄┄┄┄┄╯
-    /// ```
-    #[must_use = "constructor returns a new instance"]
-    pub const fn rounded_double_dashed() -> Self {
-        Self::rounded().horizontals('┄').verticals('┊')
+        Self::rounded().horizontals('╌').verticals('┊')
     }
 
     /// Creates a double border set.
@@ -390,19 +365,7 @@ impl BorderSet {
     /// ```
     #[must_use = "constructor returns a new instance"]
     pub const fn thick_dashed() -> Self {
-        Self::rounded().horizontals('╍').verticals('┇')
-    }
-
-    /// Creates a thick double dashed border set.
-    ///
-    /// ```text
-    /// ┏┅┅┅┅┅┅┅┓
-    /// ┋       ┋
-    /// ┗┅┅┅┅┅┅┅┛
-    /// ```
-    #[must_use = "constructor returns a new instance"]
-    pub const fn thick_double_dashed() -> Self {
-        Self::rounded().horizontals('┅').verticals('┋')
+        Self::rounded().horizontals('╍').verticals('┋')
     }
 
     /// Create a quadrant inside border set.
@@ -612,22 +575,11 @@ standard_border!(
     plain,
     "A plain border with standard box-drawing characters."
 );
-standard_border!(DoubleDashedBorder, double_dashed, "A double dashed border.");
 standard_border!(DashedBorder, dashed, "A dashed border.");
-standard_border!(
-    RoundedDoubleDashedBorder,
-    rounded_double_dashed,
-    "A double dashed border with rounded corners."
-);
 standard_border!(
     RoundedDashedBorder,
     rounded_dashed,
     "A dashed border with rounded corners."
-);
-standard_border!(
-    ThickDoubleDashedBorder,
-    thick_double_dashed,
-    "A thick double dashed border."
 );
 standard_border!(ThickDashedBorder, thick_dashed, "A thick dashed border.");
 standard_border!(RoundedBorder, rounded, "A border with rounded corners.");
@@ -884,8 +836,6 @@ mod tests {
         // Should render top-left corner and associated sides
         assert_eq!(buffer[(0, 0)].symbol(), "┌");
         assert_eq!(buffer[(0, 1)].symbol(), "│");
-        // ?
-        // assert_eq!(buffer[(1, 0)].symbol(), "─");
 
         // Should not render other borders
         assert_eq!(buffer[(0, 4)].symbol(), "│");

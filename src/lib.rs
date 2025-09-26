@@ -95,7 +95,7 @@
 //!
 //! ## Borders
 //! - Standard: [`PlainBorder`], [`RoundedBorder`], [`DoubleBorder`], [`ThickBorder`]
-//! - Dashed variants: [`DashedBorder`], [`RoundedDashedBorder`], [`ThickDashedBorder`], [`DoubleDashedBorder`], [`RoundedDoubleDashedBorder`], [`ThickDoubleDashedBorder`]
+//! - Dashed variants: [`DashedBorder`], [`RoundedDashedBorder`], [`ThickDashedBorder`],
 //! - Custom: [`CharBorder`] (single character, e.g., `****`), [`CustomBorder`] (fully customizable character set)
 //! - Specialty: [`QuadrantInsideBorder`], [`QuadrantOutsideBorder`], [`FatInsideBorder`], [`FatOutsideBorder`]
 //!
@@ -199,10 +199,9 @@ pub mod shadow;
 pub mod title;
 
 use border::{
-    CharBorder, CustomBorder, DashedBorder, DoubleBorder, DoubleDashedBorder, FatInsideBorder,
-    FatOutsideBorder, PlainBorder, QuadrantInsideBorder, QuadrantOutsideBorder, RoundedBorder,
-    RoundedDashedBorder, RoundedDoubleDashedBorder, ThickBorder, ThickDashedBorder,
-    ThickDoubleDashedBorder,
+    CharBorder, CustomBorder, DashedBorder, DoubleBorder, FatInsideBorder, FatOutsideBorder,
+    PlainBorder, QuadrantInsideBorder, QuadrantOutsideBorder, RoundedBorder, RoundedDashedBorder,
+    ThickBorder, ThickDashedBorder,
 };
 use shadow::{HalfShadow, Shadow};
 use title::{Above, After, Before, Below, Bottom, Left, Right, Title, Top};
@@ -239,7 +238,6 @@ nodyn::nodyn! {
         CustomBorder,
         DashedBorder,
         DoubleBorder,
-        DoubleDashedBorder,
         FatInsideBorder,
         FatOutsideBorder,
         HalfShadow,
@@ -249,12 +247,10 @@ nodyn::nodyn! {
         QuadrantOutsideBorder,
         RoundedBorder,
         RoundedDashedBorder,
-        RoundedDoubleDashedBorder,
         Shadow,
         Style,
         ThickBorder,
         ThickDashedBorder,
-        ThickDoubleDashedBorder,
         Title<'a, Above>,
         Title<'a, After>,
         Title<'a, Before>,
