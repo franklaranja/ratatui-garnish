@@ -5,12 +5,12 @@ use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::Line,
-    widgets::{Borders, Padding, Paragraph},
+    widgets::Paragraph,
 };
 
 use ratatui_garnish::{
-    GarnishedWidget,
-    border::{BorderSet, CharBorder, CustomBorder, PlainBorder},
+    GarnishedWidget, Padding,
+    border::{BorderSet, Borders, CharBorder, CustomBorder, PlainBorder},
     garnishes,
 };
 

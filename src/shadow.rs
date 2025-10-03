@@ -51,6 +51,8 @@ use ratatui::layout::{Position, Rect};
 /// The shadow is drawn with a specified character (`░`, `▒`, `▓`, or `█`) at the given offsets.
 /// Offsets are in full character lengths, with positive values shifting the shadow right and down,
 /// and negative values shifting it left and up.
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Shadow {
     x_offset: i8,
@@ -222,6 +224,8 @@ impl RenderModifier for Shadow {
 /// Uses the full shade character (`█`) for whole character offsets and half or quadrant characters
 /// (e.g., `▗`, `▖`) for half-character offsets, allowing finer positioning control.
 /// Offsets are specified in half-character lengths (e.g., `3` means 1.5 characters).
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct HalfShadow {
     x_offset: i8,
@@ -341,5 +345,29 @@ impl RenderModifier for HalfShadow {
                 buffer[(x, y)].set_char(symbol);
             }
         }
+    }
+}
+
+#[cfg(feature = "serde")]
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn shadow_serialization() {
+        let shadow = Shadow::default();
+        let json = serde_json::to_string_pretty(&shadow).unwrap();
+
+        let restored: Shadow = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored, shadow);
+    }
+
+    #[test]
+    fn half_shadow_serialization() {
+        let shadow = HalfShadow::default();
+        let json = serde_json::to_string_pretty(&shadow).unwrap();
+
+        let restored: HalfShadow = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored, shadow);
     }
 }

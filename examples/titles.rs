@@ -5,11 +5,11 @@ use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Modifier, Style},
     text::Line,
-    widgets::{Padding, Paragraph},
+    widgets::Paragraph,
 };
 
 use ratatui_garnish::{
-    GarnishedWidget,
+    GarnishedWidget, Padding,
     border::RoundedBorder,
     garnishes,
     title::{Above, After, Before, Below, Bottom, Left, Right, Title, Top},

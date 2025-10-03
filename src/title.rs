@@ -107,41 +107,49 @@ pub struct Title<'a, Position: TitlePosition> {
 pub trait TitlePosition: private::Sealed {}
 
 /// Renders the title over the widget's top line.
+#[derive(Eq, PartialEq, Hash)]
 pub struct Top {}
 
 impl TitlePosition for Top {}
 
 /// Renders the title over the bottom line of the widget.
+#[derive(Eq, PartialEq, Hash)]
 pub struct Bottom {}
 
 impl TitlePosition for Bottom {}
 
 /// Renders the title above the widget, reserving space and styling the entire line.
+#[derive(Eq, PartialEq, Hash)]
 pub struct Above {}
 
 impl TitlePosition for Above {}
 
 /// Renders the title below the widget, reserving space and styling the entire line.
+#[derive(Eq, PartialEq, Hash)]
 pub struct Below {}
 
 impl TitlePosition for Below {}
 
 /// Renders the title over the left edge of the widget (vertical text).
+#[derive(Eq, PartialEq, Hash)]
 pub struct Left {}
 
 impl TitlePosition for Left {}
 
 /// Renders the title vertically along the widget's right edge.
+#[derive(Eq, PartialEq, Hash)]
 pub struct Right {}
 
 impl TitlePosition for Right {}
 
 /// Renders the title before the widget (left side), reserving space and styling the entire column.
+#[derive(Eq, PartialEq, Hash)]
 pub struct Before {}
 
 impl TitlePosition for Before {}
 
 /// Renders the title after the widget (right side), reserving space and styling the entire column.
+#[derive(Eq, PartialEq, Hash)]
 pub struct After {}
 
 impl TitlePosition for After {}
@@ -732,6 +740,181 @@ impl RenderModifier for Title<'_, After> {
     }
 }
 
+// ===== Optional Serialize/Deserialize (serde) =====
+//
+// custom implementations as ratatui::text::Line is not
+// serializable using the ratatui serde feature.
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+#[cfg(feature = "serde")]
+impl<'a, Position: TitlePosition> Serialize for Title<'a, Position> {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        use serde::ser::SerializeStruct;
+
+        let mut state = serializer.serialize_struct("Title", 4)?;
+
+        // Serialize the spans as a vector of span data
+        let spans: Vec<SerializableSpan> = self
+            .line
+            .spans
+            .iter()
+            .map(|span| SerializableSpan {
+                content: span.content.clone(),
+                style: span.style,
+            })
+            .collect();
+
+        state.serialize_field("spans", &spans)?;
+        state.serialize_field(
+            "alignment",
+            &self.line.alignment.map(SerializableAlignment::from),
+        )?;
+        state.serialize_field("style", &self.line.style)?;
+        state.serialize_field("margin", &self.margin)?;
+        state.end()
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de, 'a, Position: TitlePosition> Deserialize<'de> for Title<'a, Position> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field {
+            Spans,
+            Alignment,
+            Style,
+            Margin,
+        }
+
+        struct TitleVisitor<Position>(PhantomData<Position>);
+
+        impl<'de, Position: TitlePosition> serde::de::Visitor<'de> for TitleVisitor<Position> {
+            type Value = Title<'static, Position>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("struct Title")
+            }
+
+            fn visit_map<V>(self, mut map: V) -> Result<Title<'static, Position>, V::Error>
+            where
+                V: serde::de::MapAccess<'de>,
+            {
+                let mut spans = None;
+                let mut alignment = None;
+                let mut style = None;
+                let mut margin = None;
+
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Spans => {
+                            if spans.is_some() {
+                                return Err(serde::de::Error::duplicate_field("spans"));
+                            }
+                            let serializable_spans: Vec<SerializableSpan> = map.next_value()?;
+                            spans = Some(
+                                serializable_spans
+                                    .into_iter()
+                                    .map(|s| Span::styled(s.content, s.style))
+                                    .collect::<Vec<_>>(),
+                            );
+                        }
+                        Field::Alignment => {
+                            if alignment.is_some() {
+                                return Err(serde::de::Error::duplicate_field("alignment"));
+                            }
+                            let serializable_alignment: Option<SerializableAlignment> =
+                                map.next_value()?;
+                            alignment = serializable_alignment.map(Alignment::from);
+                        }
+
+                        Field::Style => {
+                            if style.is_some() {
+                                return Err(serde::de::Error::duplicate_field("style"));
+                            }
+                            style = Some(map.next_value()?);
+                        }
+                        Field::Margin => {
+                            if margin.is_some() {
+                                return Err(serde::de::Error::duplicate_field("margin"));
+                            }
+                            margin = Some(map.next_value()?);
+                        }
+                    }
+                }
+
+                let spans = spans.ok_or_else(|| serde::de::Error::missing_field("spans"))?;
+                let style = style.ok_or_else(|| serde::de::Error::missing_field("style"))?;
+                let margin = margin.ok_or_else(|| serde::de::Error::missing_field("margin"))?;
+
+                Ok(Title {
+                    line: Line {
+                        spans,
+                        alignment,
+                        style,
+                    },
+                    margin,
+                    _position: PhantomData,
+                })
+            }
+        }
+
+        deserializer.deserialize_struct(
+            "Title",
+            &["spans", "alignment", "style", "margin"],
+            TitleVisitor(PhantomData),
+        )
+    }
+}
+
+// Helper struct for serializing Span data
+#[cfg(feature = "serde")]
+#[derive(Serialize, Deserialize)]
+#[cfg(feature = "serde")]
+struct SerializableSpan<'a> {
+    content: Cow<'a, str>,
+    style: Style,
+}
+
+#[cfg(feature = "serde")]
+#[derive(Serialize, Deserialize)]
+#[cfg(feature = "serde")]
+enum SerializableAlignment {
+    Left,
+    Center,
+    Right,
+}
+
+#[cfg(feature = "serde")]
+impl From<Alignment> for SerializableAlignment {
+    fn from(value: Alignment) -> Self {
+        match value {
+            Alignment::Left => Self::Left,
+            Alignment::Center => Self::Center,
+            Alignment::Right => Self::Right,
+        }
+    }
+}
+
+#[cfg(feature = "serde")]
+impl From<SerializableAlignment> for Alignment {
+    fn from(value: SerializableAlignment) -> Self {
+        match value {
+            SerializableAlignment::Left => Self::Left,
+            SerializableAlignment::Center => Self::Center,
+            SerializableAlignment::Right => Self::Right,
+        }
+    }
+}
+
 // ===== Private Module for Sealed Trait =====
 
 mod private {
@@ -986,5 +1169,26 @@ mod tests {
         assert_eq!(buffer[(2, 7)].symbol(), "X");
         assert_eq!(buffer[(2, 8)].symbol(), "Y");
         assert_eq!(buffer[(2, 9)].symbol(), "Z");
+    }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn title_serialization() {
+        use ratatui::text::Span;
+
+        let title = Title::<Top>::default()
+            .spans([
+                Span::raw("Status: "),
+                Span::styled("Online", Style::default().fg(Color::Green)),
+                Span::raw(" | Load: "),
+                Span::styled("85%", Style::default().fg(Color::Yellow)),
+            ])
+            .margin(1)
+            .right_aligned();
+
+        let json = serde_json::to_string_pretty(&title).unwrap();
+
+        let restored: Title<Top> = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored, title);
     }
 }

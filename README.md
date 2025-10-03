@@ -54,8 +54,13 @@ Import the `GarnishableWidget` trait to add the `garnish` method to
 any Ratatui widget:
 
 ```rust
-use ratatui::{style::{Color, Style}, text::Text, widgets::Padding};
-use ratatui_garnish::{border::RoundedBorder, title::{Title, Above}, GarnishableWidget};
+use ratatui::{style::{Color, Style}, text::Text};
+use ratatui_garnish::{
+    border::RoundedBorder,
+    Padding,
+    GarnishableWidget
+    title::{Title, Above},
+};
 
 // Create a text widget with multiple decorations
 let widget = Text::raw("Hello, World!\nTasty TUIs from Ratatui")
@@ -74,8 +79,14 @@ and then `after_render` effects (e.g., titles over borders).
 Combine multiple garnishes for a polished UI:
 
 ```rust
-use ratatui::{style::{Color, Style, Modifier}, text::Line, widgets::Padding};
-use ratatui_garnish::{border::DoubleBorder, shadow::Shadow, title::{Title, Top, Bottom}, GarnishableWidget};
+use ratatui::{style::{Color, Style, Modifier}, text::Line};
+use ratatui_garnish::{
+    border::DoubleBorder,
+    GarnishableWidget,
+    Paddng,
+    shadow::Shadow,
+    title::{Title, Top, Bottom},
+};
 
 let widget = Line::raw("Important Message")
     .garnish(Padding::uniform(2))                       // Margin outside
@@ -92,8 +103,12 @@ let widget = Line::raw("Important Message")
 Use the `Garnishes` vec to apply the same garnishes to multiple widgets:
 
 ```rust
-use ratatui::{style::{Color, Style, Modifier}, text::Line, widgets::Padding};
-use ratatui_garnish::{border::DoubleBorder, title::{Title, Top}, garnishes, GarnishableWidget};
+use ratatui::{style::{Color, Style, Modifier}, text::Line};
+use ratatui_garnish::{
+    border::DoubleBorder,
+    garnishes, GarnishableWidget, Padding,
+    title::{Title, Top},
+};
 
 let garnishes = garnishes![
     Style::default().fg(Color::Blue),
@@ -141,9 +156,137 @@ assert_eq!(widget.first_padding(), Some(&Padding::uniform(1)));
 - `Shadow`: Light (`░`), medium (`▒`), dark (`▓`), or full (`█`) shades with full-character offsets
 - `HalfShadow`: Full (`█`) or quadrant characters (e.g., `▗`) with half-character offsets
 
+### Padding
+- `Padding`: Spacing around the widget.
+
 ### Built-in Ratatui Support
 - `Style`: Background colors, text styling
-- `Padding`: Spacing around the widget
+
+# Recipes
+
+Here are some examples with screenshots of what you can do with **ratatui-garnish**.
+I only show the garnishes used, the complete code can
+be found in the examples directory.
+
+
+## Padding
+
+This example shows a combination of `Style` and `Padding`
+garnishes on a `ratatui::text::Line` widget.
+
+<div class="center">
+ <img src="images/padding.webp" alt="Screenshot of padding example">
+</div>
+
+```rust
+garnishes![
+    Style::default().bg(ORANGE400),
+    Padding::vertical(1),
+    Style::default().bg(ORANGE600),
+    Padding::horizontal(2),
+    Style::default().bg(BLUE100),
+    Padding::left(2),
+    Style::default().bg(BLUE200),
+    Padding::top(1),
+    Style::default().bg(BLUE300),
+    Padding::right(2),
+    Style::default().bg(BLUE400),
+    Padding::bottom(1),
+    Style::default().bg(BLUE500),
+    Padding::left(2),
+    Style::default().bg(BLUE600),
+    Padding::top(1),
+    Style::default().bg(BLUE700),
+    Padding::right(2),
+    Style::default().bg(BLUE800),
+    Padding::bottom(1),
+    Style::default().bg(BLUE900),
+    Padding::top(1),
+
+```
+
+## Borders
+
+You can add any combination of borders to a widget, in this
+example it is again a `ratatui::text::Line`.
+
+<div class="center">
+  <img src="images/borders.webp" alt="Screenshot of borders example">
+</div>
+
+```rust
+garnishes![
+    Style::default().fg(Color::Rgb(220, 0, 0)),
+    CustomBorder::new(BorderSet::dashed().corners('♥')),
+    Padding::proportional(1),
+    CharBorder::new('♥').borders(Borders::TOP | Borders::BOTTOM),
+    Padding::horizontal(1),
+    Style::default().fg(GREEN700),
+    PlainBorder::default(),
+    Padding::horizontal(1),
+    Style::default().fg(GREEN600),
+    PlainBorder::default(),
+    Padding::horizontal(1),
+    Style::default().fg(GREEN500),
+    PlainBorder::default(),
+    Padding::top(1),
+];
+```
+
+## Titles
+
+This example shows the title garnishes, notice the difference
+between titles that reserve space (the triangles) and those
+that render over the border.
+
+<div class="center">
+    <img src="images/titles.webp" alt="Screenshot of titles example">
+</div>
+
+```rust
+garnishes![
+    Title::<Above>::styled("▲", Style::default().fg(ORANGE500)).centered(),
+    Title::<Below>::styled("▼", Style::default().fg(BLUE500)).centered(),
+    Title::<Before>::styled("◀", Style::default().fg(PURPLE500)).centered(),
+    Title::<After>::styled("▶", Style::default().fg(GREEN500)).centered(),
+    Padding::horizontal(1),
+    Title::<Top>::styled(" top ", Style::default().fg(ORANGE200)).centered(),
+    Title::<Bottom>::styled(" bottom ", Style::default().fg(BLUE200)).centered(),
+    Title::<Left>::styled(" left ", Style::default().fg(PURPLE200)).centered(),
+    Title::<Right>::styled(" right ", Style::default().fg(GREEN200)).centered(),
+    RoundedBorder::default(),
+    Padding::top(4),
+];
+```
+
+## Shadow
+
+Here we add a `Title::<Above>` and a `HalfShadow` to a
+`ratatui::widgets::Paragraph` widget.
+
+<div class="center">
+  <img src="images/shadow.webp" alt="Screenshot of shadow example">
+</div>
+
+```rust
+garnishes![
+    Style::default().fg(BLUE600),
+    HalfShadow::default(),
+    Title::<Above>::styled(
+        "From \"The Rust Programming Language\"",
+        Style::default().bg(ORANGE400).fg(BLUE900)
+    ).centered(),
+    Style::default().bg(ORANGE100).fg(ORANGE700),
+    Padding::proportional(2),
+];
+```
+
+# Serde support
+
+Serialization & deserialization using serde can be enabled using the cargo feature
+`serde`. When it is enabled all garnishes, the `Garnish` enum and the `Garnishes`
+`Vec` can be serialized and deserialized. This makes it easy to add theme support
+to your application.
 
 ## Performance
 

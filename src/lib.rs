@@ -19,9 +19,9 @@
 //! # Example
 //!
 //! ```rust
-//! use ratatui::{text::Text, widgets::Padding, style::{Color, Style}};
+//! use ratatui::{text::Text, style::{Color, Style}};
 //! use ratatui_garnish::GarnishableWidget;
-//! use ratatui_garnish::{border::RoundedBorder, title::{Title, Above}};
+//! use ratatui_garnish::{border::RoundedBorder, title::{Title, Above}, Padding};
 //!
 //! // Create a text widget with multiple decorations
 //! let widget = Text::raw("Hello, World!\nTasty TUIs from Ratatui")
@@ -43,11 +43,12 @@
 //!
 //! This trait extends `Widget`. There is a similar traits `GarnishableStatefulWidget` for `StatefulWidget`.
 //! The [`RenderModifier`] trait defines how garnishes modify rendering and layout. Ratatui's
-//! `Style` and `Padding` types implement `RenderModifier`, allowing their use as garnishes:
+//! `Style` implements `RenderModifier` and [`Padding`] too (which is similair to the
+//! `Padding` from `Block` but can be serialized) allowing their use as garnishes:
 //!
 //! ```rust
-//! use ratatui::{style::{Color, Style}, text::Line, widgets::Padding};
-//! use ratatui_garnish::{GarnishableWidget, RenderModifier};
+//! use ratatui::{style::{Color, Style}, text::Line};
+//! use ratatui_garnish::{GarnishableWidget, RenderModifier, Padding};
 //!
 //! let widget = Line::raw("Hello, World!")
 //!     .garnish(Style::default().bg(Color::Blue))   // Background for padded area
@@ -64,8 +65,8 @@
 //! `Garnish` items, which is an enum that wraps all available garnishes.
 //!
 //! ```rust
-//! # use ratatui_garnish::{GarnishableWidget, RenderModifier};
-//! # use ratatui::{style::{Style, Color}, text::Line, widgets::Padding};
+//! # use ratatui_garnish::{GarnishableWidget, RenderModifier, Padding};
+//! # use ratatui::{style::{Style, Color}, text::Line};
 //! #
 //! let widget = Line::raw("Hello, World!")
 //!    .garnish(Style::default().bg(Color::Blue))
@@ -84,8 +85,8 @@
 //! or from only a widget using `from`.  Add garnishes with methods like `push` or `extend`.
 //!
 //! ```rust
-//! use ratatui_garnish::{GarnishedWidget, RenderModifier};
-//! use ratatui::{style::{Style, Color}, text::Line, widgets::Padding};
+//! use ratatui_garnish::{GarnishedWidget, RenderModifier, Padding};
+//! use ratatui::{style::{Style, Color}, text::Line};
 //!
 //! let mut widget = GarnishedWidget::from(Line::raw("Hello, World!"));
 //! widget.push(Style::default().bg(Color::Green));
@@ -107,9 +108,11 @@
 //! - [`Shadow`] (light `░`, medium `▒`, dark `▓`, or full `█` shades with full-character offsets)
 //! - [`HalfShadow`] (full `█` or quadrant characters with half-character offsets)
 //!
+//! ## Padding
+//! - [`Padding`] (spacing around the widget), same as `Padding` from `ratatui::widgets::Block`
+//!
 //! ## Built-in Ratatui Support
 //! - [`Style`] (background colors, text styling)
-//! - [`Padding`] (spacing around the widget)
 //!
 //! ## Complex Compositions
 //!
@@ -119,12 +122,11 @@
 //! use ratatui_garnish::{
 //!     GarnishableWidget, RenderModifier,
 //!     title::{Title, Top, Bottom,},
-//!     border::DoubleBorder,
+//!     border::DoubleBorder, Padding
 //! };
 //! use ratatui::{
 //!     text::Line,
 //!     style::{Color, Style, Modifier},
-//!     widgets::Padding,
 //! };
 //!
 //! let complex_widget = Line::raw("Important Message")
@@ -148,11 +150,14 @@
 //! ```rust
 //! use ratatui_garnish::{
 //!     GarnishedWidget, GarnishableWidget, RenderModifier,
+//!     Padding,
 //!     title::{Title, Top},
 //!     border::DoubleBorder, garnishes,
 //! };
-//! use ratatui::{text::Line, widgets::Padding};
-//! use ratatui::style::{Color, Style, Modifier};
+//! use ratatui::{
+//!     text::Line,
+//!     style::{Color, Style, Modifier},
+//! };
 //!
 //! let garnishes = garnishes![
 //!     Style::default().fg(Color::Blue),
@@ -169,6 +174,13 @@
 //!         Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)).margin(1));
 //! other_widget.extend(garnishes);
 //! ```
+//!
+//! # Serde support
+//!
+//! Serialization & deserialization using serde can be enabled using the cargo feature
+//! `serde`. When it is enabled all garnishes, the `Garnish` enum and the `Garnishes`
+//! `Vec` can be serialized and deserialized. This makes it easy to add theme support
+//! to your application.
 //!
 //! # Performance Notes
 //!
@@ -191,12 +203,15 @@ use ratatui::{
     buffer::Buffer,
     layout::Rect,
     style::Style,
-    widgets::{Padding, StatefulWidget, StatefulWidgetRef, Widget, WidgetRef},
+    widgets::{StatefulWidget, StatefulWidgetRef, Widget, WidgetRef},
 };
 
 pub mod border;
+mod padding;
 pub mod shadow;
 pub mod title;
+
+pub use padding::Padding;
 
 use border::{
     CharBorder, CustomBorder, DashedBorder, DoubleBorder, FatInsideBorder, FatOutsideBorder,
@@ -232,6 +247,7 @@ pub trait RenderModifier {
 nodyn::nodyn! {
     /// Enum wrapping all available garnishes.
     #[module_path = "ratatui_garnish"]
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
     #[derive(Debug, Clone)]
     pub enum Garnish<'a> {
         CharBorder,
@@ -292,6 +308,8 @@ nodyn::nodyn! {
     ///     .garnish(Title::<Top>::raw("Blue Border"))
     ///     .extend_from_slice(&garnishes);
     /// ```
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(transparent))]
     vec Garnishes;
 
     /// A widget that wraps another widget with a vector of garnishes.
@@ -344,8 +362,8 @@ impl<'a, W> GarnishedWidget<'a, W> {
     /// # Example
     ///
     /// ```rust
-    /// use ratatui::{style::Style, text::Line, widgets::Padding};
-    /// use ratatui_garnish::GarnishableWidget;
+    /// use ratatui::{style::Style, text::Line};
+    /// use ratatui_garnish::{GarnishableWidget, Padding};
     ///
     /// let widget = Line::raw("Test")
     ///     .garnish(Style::default())
@@ -426,8 +444,8 @@ impl<'a, W> GarnishedStatefulWidget<'a, W> {
     /// # Example
     ///
     /// ```rust
-    /// use ratatui::{style::Style, widgets::{List, Padding}, text::Line};
-    /// use ratatui_garnish::GarnishableWidget;
+    /// use ratatui::{style::Style, widgets::List, text::Line};
+    /// use ratatui_garnish::{GarnishableWidget, Padding};
     ///
     /// let widget = List::new::<Vec<Line>>(vec![])
     ///     .garnish(Style::default())
@@ -525,24 +543,12 @@ impl RenderModifier for Style {
     }
 }
 
-impl RenderModifier for Padding {
-    fn modify_area(&self, area: Rect) -> Rect {
-        Rect {
-            x: area.x + self.left,
-            y: area.y + self.top,
-            width: area.width.saturating_sub(self.left + self.right),
-            height: area.height.saturating_sub(self.top + self.bottom),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use ratatui::{
         style::{Color, Style},
         text::Line,
-        widgets::Padding,
     };
 
     #[test]

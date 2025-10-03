@@ -5,10 +5,10 @@ use ratatui::{
     layout::{Alignment, Constraint, Layout, Rect},
     style::{Modifier, Style},
     text::Line,
-    widgets::{Padding, Paragraph},
+    widgets::Paragraph,
 };
 
-use ratatui_garnish::{GarnishedWidget, garnishes};
+use ratatui_garnish::{GarnishedWidget, Padding, garnishes};
 
 use palette::{
     BLUE100, BLUE200, BLUE300, BLUE400, BLUE500, BLUE600, BLUE700, BLUE800, BLUE900, ORANGE50,

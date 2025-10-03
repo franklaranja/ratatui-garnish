@@ -1,7 +1,7 @@
 //! Border Garnishes
 //!
 //! A border is composed of a set of characters used to draw the border,
-//! a `BorderSet` and a bitflags struct [`Borders`] (from `ratatui`) to
+//! a `BorderSet` and a bitflags struct [`Borders`] (just like in `ratatui`) to
 //! configure which borders to render. Borders don't have their own [`Style`](ratatui::style::Style);
 //! set the style of your border with the `Style` garnish instead.
 //!
@@ -28,7 +28,7 @@
 //! # use ratatui::{text::Text, style::{Color, Style}};
 //! # use ratatui_garnish::{ GarnishableWidget };
 //! # use ratatui_garnish::border::PlainBorder;
-//! use ratatui::widgets::Borders;
+//! use ratatui_garnish::border::Borders;
 //!
 //! let widget = Text::raw("Hello, world")
 //!     .garnish(PlainBorder::new(Borders::TOP | Borders::BOTTOM));
@@ -38,8 +38,7 @@
 //! direct calls to `Borders` methods:
 //!
 //! ```rust
-//! # use ratatui_garnish::border::PlainBorder;
-//! # use ratatui::widgets::Borders;
+//! # use ratatui_garnish::border::{PlainBorder, Borders};
 //! let mut border = PlainBorder::new(Borders::TOP);
 //! border.insert(Borders::LEFT);
 //! border.remove(Borders::TOP);
@@ -57,8 +56,7 @@
 //! `CharBorder`:
 //!
 //! ```rust
-//! # use ratatui_garnish::border::CharBorder;
-//! # use ratatui::widgets::Borders;
+//! # use ratatui_garnish::border::{CharBorder, Borders};
 //! let border = CharBorder::new('*')
 //!     .borders(Borders::RIGHT);
 //! ```
@@ -76,7 +74,7 @@
 //! ```
 
 use derive_more::{Deref, DerefMut};
-use ratatui::{buffer::Buffer, layout::Rect, widgets::Borders};
+use ratatui::{buffer::Buffer, layout::Rect};
 
 /// Trait for rendering borders around ratatui widgets.
 ///
@@ -210,6 +208,8 @@ impl<T: Border> crate::RenderModifier for T {
 /// // Create from a single character
 /// let simple = BorderSet::new('#');
 /// ```
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Default, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct BorderSet {
     pub top_left: char,
@@ -534,14 +534,17 @@ macro_rules! standard_border {
         /// # Examples
         ///
         /// ```rust
-        /// use ratatui::widgets::Borders;
-        #[doc = concat!("use ratatui_garnish::border::", stringify!($name), ";")]
+        #[doc = concat!("use ratatui_garnish::border::{Borders, ", stringify!($name), "};")]
         ///
         #[doc = concat!("let border = ", stringify!($name), "::default();")]
         #[doc = concat!("let custom = ", stringify!($name), "::new(Borders::TOP | Borders::BOTTOM);")]
         /// ```
+        #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+        #[cfg_attr(feature = "serde", serde(transparent))]
         #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Deref, DerefMut)]
-        pub struct $name(pub Borders);
+        pub struct $name(
+            pub Borders
+        );
 
         impl $name {
             /// Creates a new border with the specified configuration.
@@ -603,12 +606,13 @@ standard_border!(FatOutsideBorder, fat_outside, "A fat outside border.");
 /// # Examples
 ///
 /// ```rust
-/// use ratatui::widgets::Borders;
-/// use ratatui_garnish::border::CharBorder;
+/// use ratatui_garnish::border::{Borders, CharBorder};
 ///
 /// let star_border = CharBorder::new('*'); // All sides with '*'
 /// let hash_border = CharBorder::new('#').borders(Borders::TOP | Borders::BOTTOM);
 /// ```
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct CharBorder {
     pub symbol: char,
@@ -650,8 +654,7 @@ impl CharBorder {
     /// # Example
     ///
     /// ```
-    /// use ratatui_garnish::border::{CharBorder, Border};
-    /// use ratatui::widgets::Borders;
+    /// use ratatui_garnish::border::{CharBorder, Border, Borders};
     ///
     /// let border = CharBorder::new('*').borders(Borders::TOP);
     /// assert_eq!(border.get_borders(), Borders::TOP);
@@ -681,12 +684,13 @@ impl Border for CharBorder {
 /// # Example
 ///
 /// ```rust
-/// use ratatui_garnish::border::{BorderSet, CustomBorder};
-/// use ratatui::widgets::Borders;
+/// use ratatui_garnish::border::{Borders, BorderSet, CustomBorder};
 ///
 /// let custom_set = BorderSet::plain().corners('*').horizontals('=');
 /// let border = CustomBorder::new(custom_set).borders(Borders::ALL);
 /// ```
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "serde", serde(default))]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub struct CustomBorder {
     /// The custom character set used to draw the border.
@@ -732,6 +736,22 @@ impl Border for CustomBorder {
 
     fn get_border_set(&self) -> BorderSet {
         self.char_set
+    }
+}
+
+bitflags::bitflags! {
+    /// Bitflags that can be composed to set the visible borders essentially on any border garnish.
+    #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+    #[cfg_attr(feature = "serde", serde(transparent))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, Hash)]
+    pub struct Borders: u8 {
+        const NONE   = 0b0000;
+        const TOP    = 0b0001;
+        const RIGHT  = 0b0010;
+        const BOTTOM = 0b0100;
+        const LEFT   = 0b1000;
+        const ALL = Self::TOP.bits() | Self::RIGHT.bits() | Self::BOTTOM.bits() | Self::LEFT.bits();
     }
 }
 
@@ -917,5 +937,36 @@ mod tests {
         // Should handle zero-sized areas gracefully
         assert_eq!(inner_area.width, 0);
         assert_eq!(inner_area.height, 0);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn plain_border_serialization() {
+        let border = PlainBorder::default();
+        let json = serde_json::to_string_pretty(&border).unwrap();
+
+        let restored: PlainBorder = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored, border);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn char_border_serialization() {
+        let border = CharBorder::new('*');
+        let json = serde_json::to_string_pretty(&border).unwrap();
+
+        let restored: CharBorder = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored, border);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn custom_border_serialization() {
+        let custom_border_set = BorderSet::plain().corners('*').horizontals('=');
+        let border = CustomBorder::new(custom_border_set).borders(Borders::TOP | Borders::LEFT);
+        let json = serde_json::to_string_pretty(&border).unwrap();
+
+        let restored: CustomBorder = serde_json::from_str(&json).unwrap();
+        assert_eq!(restored, border);
     }
 }
