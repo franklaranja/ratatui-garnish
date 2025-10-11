@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 use ratatui_garnish::{
-    GarnishedWidget, Padding, garnishes,
+    GarnishableWidget, Padding, garnishes,
     shadow::HalfShadow,
     title::{Above, Title},
 };
@@ -52,18 +52,19 @@ fn draw(frame: &mut Frame) {
         ),
     ]);
 
-    let mut widget: GarnishedWidget<_> = Paragraph::new(quote).wrap(Wrap { trim: true }).into();
-    widget.extend(garnishes![
-        Style::default().fg(BLUE600),
-        HalfShadow::default(),
-        Title::<Above>::styled(
-            "From \"The Rust Programming Language\"",
-            Style::default().bg(ORANGE400).fg(BLUE900)
-        )
-        .centered(),
-        Style::default().bg(ORANGE100).fg(ORANGE700),
-        Padding::proportional(2),
-    ]);
+    let widget = Paragraph::new(quote)
+        .wrap(Wrap { trim: true })
+        .garnishes(garnishes![
+            Style::default().fg(BLUE600),
+            HalfShadow::default(),
+            Title::<Above>::styled(
+                "From \"The Rust Programming Language\"",
+                Style::default().bg(ORANGE400).fg(BLUE900)
+            )
+            .centered(),
+            Style::default().bg(ORANGE100).fg(ORANGE700),
+            Padding::proportional(2),
+        ]);
 
     frame.render_widget(widget, center_area(45, 13, main_area));
 }

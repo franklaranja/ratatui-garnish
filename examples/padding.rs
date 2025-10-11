@@ -8,7 +8,7 @@ use ratatui::{
     widgets::Paragraph,
 };
 
-use ratatui_garnish::{GarnishedWidget, Padding, garnishes};
+use ratatui_garnish::{GarnishableWidget, Padding, garnishes};
 
 use palette::{
     BLUE100, BLUE200, BLUE300, BLUE400, BLUE500, BLUE600, BLUE700, BLUE800, BLUE900, ORANGE50,
@@ -39,13 +39,12 @@ fn draw(frame: &mut Frame) {
     frame.render_widget(title("ratatui-garnish  Padding Demo"), title_area);
     frame.render_widget(help(), help_area);
 
-    let mut widget: GarnishedWidget<_> = Line::styled(
+    let widget = Line::styled(
         "Code is poetry written in logic",
         Style::default().fg(ORANGE200),
     )
     .centered()
-    .into();
-    widget.extend(garnishes![
+    .garnishes(garnishes![
         Style::default().bg(ORANGE400),
         Padding::vertical(1),
         Style::default().bg(ORANGE600),

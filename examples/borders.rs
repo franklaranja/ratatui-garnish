@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 use ratatui_garnish::{
-    GarnishedWidget, Padding,
+    GarnishableWidget, Padding,
     border::{BorderSet, Borders, CharBorder, CustomBorder, PlainBorder},
     garnishes,
 };
@@ -40,25 +40,24 @@ fn draw(frame: &mut Frame) {
     frame.render_widget(title("ratatui-garnish  Borders Demo"), title_area);
     frame.render_widget(help(), help_area);
 
-    let mut widget: GarnishedWidget<_> = Line::styled("Rust", Style::default().fg(ORANGE200))
+    let widget = Line::styled("Rust", Style::default().fg(ORANGE200))
         .centered()
-        .into();
-    widget.extend(garnishes![
-        Style::default().fg(Color::Rgb(220, 0, 0)),
-        CustomBorder::new(BorderSet::dashed().corners('♥')),
-        Padding::proportional(1),
-        CharBorder::new('♥').borders(Borders::TOP | Borders::BOTTOM),
-        Padding::horizontal(1),
-        Style::default().fg(GREEN700),
-        PlainBorder::default(),
-        Padding::horizontal(1),
-        Style::default().fg(GREEN600),
-        PlainBorder::default(),
-        Padding::horizontal(1),
-        Style::default().fg(GREEN500),
-        PlainBorder::default(),
-        Padding::top(1),
-    ]);
+        .garnishes(garnishes![
+            Style::default().fg(Color::Rgb(220, 0, 0)),
+            CustomBorder::new(BorderSet::dashed().corners('♥')),
+            Padding::proportional(1),
+            CharBorder::new('♥').borders(Borders::TOP | Borders::BOTTOM),
+            Padding::horizontal(1),
+            Style::default().fg(GREEN700),
+            PlainBorder::default(),
+            Padding::horizontal(1),
+            Style::default().fg(GREEN600),
+            PlainBorder::default(),
+            Padding::horizontal(1),
+            Style::default().fg(GREEN500),
+            PlainBorder::default(),
+            Padding::top(1),
+        ]);
 
     frame.render_widget(widget, center_area(26, 15, main_area));
 }

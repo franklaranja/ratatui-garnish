@@ -148,16 +148,16 @@
 //! the same garnishes to multiple widgets:
 //!
 //! ```rust
-//! use ratatui_garnish::{
-//!     GarnishedWidget, GarnishableWidget, RenderModifier,
-//!     Padding,
-//!     title::{Title, Top},
-//!     border::DoubleBorder, garnishes,
-//! };
-//! use ratatui::{
-//!     text::Line,
-//!     style::{Color, Style, Modifier},
-//! };
+//! # use ratatui_garnish::{
+//! #     GarnishedWidget, GarnishableWidget, RenderModifier,
+//! #     Padding,
+//! #     title::{Title, Top},
+//! #     border::DoubleBorder, garnishes,
+//! # };
+//! # use ratatui::{
+//! #     text::Line,
+//! #     style::{Color, Style, Modifier},
+//! # };
 //!
 //! let garnishes = garnishes![
 //!     Style::default().fg(Color::Blue),
@@ -175,18 +175,66 @@
 //! other_widget.extend(garnishes);
 //! ```
 //!
-//! # Serde support
+//! The `GarnishableWidget` and `GarnishableStatefulWidget` add the methods
+//! `garnishes` and `garnishes_from_slice` to construct `GarnishedWidget`s directly
+//! from [`Garnishes`].
+//!
+//! ```rust
+//! # use ratatui_garnish::{
+//! #     GarnishedWidget, GarnishableWidget, RenderModifier,
+//! #     Padding,
+//! #     border::DoubleBorder, garnishes,
+//! # };
+//! # use ratatui::{
+//! #     text::Line,
+//! #     style::{Color, Style },
+//! # };
+//!
+//! let widget = Line::raw("Widget")
+//!     .garnishes( garnishes![
+//!     Style::default().fg(Color::Blue),
+//!     DoubleBorder::default(),
+//!     Padding::uniform(2),
+//!     Style::default().fg(Color::White),
+//! ]);
+//!
+//! // copy garnishes of widget to other_widget
+//! let other_widget = Line::raw("Other Widget")
+//!     .garnishes_from_slice(widget.as_slice());
+//! ```
+//!
+//! # Features
+//!
+//! ## Serde support
 //!
 //! Serialization & deserialization using serde can be enabled using the cargo feature
 //! `serde`. When it is enabled all garnishes, the `Garnish` enum and the `Garnishes`
 //! `Vec` can be serialized and deserialized. This makes it easy to add theme support
 //! to your application.
 //!
-//! # Performance Notes
+//! ## Decorated widget
 //!
-//! - Garnishes are applied in the order they are added, allowing precise control over rendering.
-//! - Zero-cost abstractions ensure no runtime cost for unused garnishes.
-//! - No dynamic dispatch or type erasure, preserving type safety and performance.
+//! The cargo feature `decorated widget` enables `DecoratedWidget` and `DecoratedStatefulWidget`
+//! which wrap one widget with one garnish, like the traditional decorator pattern. It
+//! offers little benefits over `GarnishedWidget`. It might be slightly faster
+//! if you want to use only a small number of garnishes. The `after_render` functions
+//! are rendered in reverse order.
+//!
+//! ```rust
+//! use ratatui::{style::{Color, Style}, text::Text}};
+//! use ratatui_garnish::{
+//!     border::PlainBorder,
+//!     title::{Title, Top},
+//!     GarnishableWidget, Padding,
+//! };
+//!
+//! #[cfg(feature = "decorated_widget")]
+//! let widget = Text::raw("Hello World!")
+//!     .decorate(Style::default().fg(Color::Red).bg(Color::White))
+//!     .decorate(Title::<Top>::raw("Paragraph").margin(1))
+//!     .decorate(PlainBorder::default())
+//!     .decorate(Padding::horizontal(2));
+//! ```
 //!
 //! # Compatibility
 //!
@@ -207,10 +255,14 @@ use ratatui::{
 };
 
 pub mod border;
+#[cfg(feature = "decorated_widget")]
+mod decorator;
 mod padding;
 pub mod shadow;
 pub mod title;
 
+#[cfg(feature = "decorated_widget")]
+pub use decorator::{DecoratedStatefulWidget, DecoratedWidget};
 pub use padding::Padding;
 
 use border::{
@@ -519,6 +571,28 @@ pub trait GarnishableWidget: Widget + Sized {
     fn garnish<'a, G: Into<Garnish<'a>>>(self, garnish: G) -> GarnishedWidget<'a, Self> {
         GarnishedWidget::new(self, garnish)
     }
+
+    /// Applies a Vec<Garnish>to the widget, wrapping it in a `GarnishedWidget`.
+    fn garnishes<'a, G: Into<Vec<Garnish<'a>>>>(self, garnishes: G) -> GarnishedWidget<'a, Self> {
+        GarnishedWidget {
+            widget: self,
+            garnishes: garnishes.into(),
+        }
+    }
+
+    /// Applies a copy of `&[Garnish]` to the widget, wrapping it in a `GarnishedWidget`.
+    fn garnishes_from_slice<'a>(self, garnishes: &[Garnish<'a>]) -> GarnishedWidget<'a, Self> {
+        GarnishedWidget {
+            widget: self,
+            garnishes: garnishes.to_vec(),
+        }
+    }
+
+    /// Applies a garnish to the widget, wrapping it in a `DecoratedWidget`.
+    #[cfg(feature = "decorated_widget")]
+    fn decorate<R: RenderModifier>(self, garnish: R) -> DecoratedWidget<Self, R> {
+        DecoratedWidget::new(self, garnish)
+    }
 }
 
 // Blanket implementation for all widgets that implement `Widget`.
@@ -526,9 +600,37 @@ impl<W: Widget> GarnishableWidget for W {}
 
 /// A trait for stateful widgets that can be garnished.
 pub trait GarnishableStatefulWidget: StatefulWidget + Sized {
-    /// Applies a garnish to the widget, wrapping it in a `GarnishedWidget`.
+    /// Applies a garnish to the widget, wrapping it in a `GarnishedStatefulWidget`.
     fn garnish<'a, G: Into<Garnish<'a>>>(self, garnish: G) -> GarnishedStatefulWidget<'a, Self> {
         GarnishedStatefulWidget::new(self, garnish)
+    }
+
+    /// Applies a Vec<Garnish>to the widget, wrapping it in a `GarnishedStatefulWidget`.
+    fn garnishes<'a, G: Into<Vec<Garnish<'a>>>>(
+        self,
+        garnishes: G,
+    ) -> GarnishedStatefulWidget<'a, Self> {
+        GarnishedStatefulWidget {
+            widget: self,
+            garnishes: garnishes.into(),
+        }
+    }
+
+    /// Applies a copy of `&[Garnish]` to the widget, wrapping it in a `GarnishedStatefulWidget`.
+    fn garnishes_from_slice<'a>(
+        self,
+        garnishes: &[Garnish<'a>],
+    ) -> GarnishedStatefulWidget<'a, Self> {
+        GarnishedStatefulWidget {
+            widget: self,
+            garnishes: garnishes.to_vec(),
+        }
+    }
+
+    /// Applies a garnish to the widget, wrapping it in a `DecoratedStatefulWidget`.
+    #[cfg(feature = "decorated_widget")]
+    fn decorate<R: RenderModifier>(self, garnish: R) -> DecoratedStatefulWidget<Self, R> {
+        DecoratedStatefulWidget::new(self, garnish)
     }
 }
 

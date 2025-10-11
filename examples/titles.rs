@@ -9,7 +9,7 @@ use ratatui::{
 };
 
 use ratatui_garnish::{
-    GarnishedWidget, Padding,
+    GarnishableWidget, Padding,
     border::RoundedBorder,
     garnishes,
     title::{Above, After, Before, Below, Bottom, Left, Right, Title, Top},
@@ -44,23 +44,21 @@ fn draw(frame: &mut Frame) {
     frame.render_widget(title("ratatui-garnish  Titles Demo"), title_area);
     frame.render_widget(help(), help_area);
 
-    let mut widget: GarnishedWidget<_> =
-        Line::styled("The compiler is your friend", Style::default().fg(BLUE400))
-            .centered()
-            .into();
-    widget.extend(garnishes![
-        Title::<Above>::styled("▲", Style::default().fg(ORANGE500)).centered(),
-        Title::<Below>::styled("▼", Style::default().fg(BLUE500)).centered(),
-        Title::<Before>::styled("◀", Style::default().fg(PURPLE500)).centered(),
-        Title::<After>::styled("▶", Style::default().fg(GREEN500)).centered(),
-        Padding::horizontal(1),
-        Title::<Top>::styled(" top ", Style::default().fg(ORANGE200)).centered(),
-        Title::<Bottom>::styled(" bottom ", Style::default().fg(BLUE200)).centered(),
-        Title::<Left>::styled(" left ", Style::default().fg(PURPLE200)).centered(),
-        Title::<Right>::styled(" right ", Style::default().fg(GREEN200)).centered(),
-        RoundedBorder::default(),
-        Padding::top(4),
-    ]);
+    let widget = Line::styled("The compiler is your friend", Style::default().fg(BLUE400))
+        .centered()
+        .garnishes(garnishes![
+            Title::<Above>::styled("▲", Style::default().fg(ORANGE500)).centered(),
+            Title::<Below>::styled("▼", Style::default().fg(BLUE500)).centered(),
+            Title::<Before>::styled("◀", Style::default().fg(PURPLE500)).centered(),
+            Title::<After>::styled("▶", Style::default().fg(GREEN500)).centered(),
+            Padding::horizontal(1),
+            Title::<Top>::styled(" top ", Style::default().fg(ORANGE200)).centered(),
+            Title::<Bottom>::styled(" bottom ", Style::default().fg(BLUE200)).centered(),
+            Title::<Left>::styled(" left ", Style::default().fg(PURPLE200)).centered(),
+            Title::<Right>::styled(" right ", Style::default().fg(GREEN200)).centered(),
+            RoundedBorder::default(),
+            Padding::top(4),
+        ]);
 
     frame.render_widget(widget, center_area(45, 13, main_area));
 }

@@ -100,7 +100,7 @@ let widget = Line::raw("Important Message")
 
 ### Reusing Garnishes
 
-Use the `Garnishes` vec to apply the same garnishes to multiple widgets:
+Use the `Garnishes` vector to apply the same garnishes to multiple widgets:
 
 ```rust
 use ratatui::{style::{Color, Style, Modifier}, text::Line};
@@ -124,6 +124,23 @@ widget1.extend_from_slice(&garnishes);
 let mut widget2 = Line::raw("Second Widget")
     .garnish(Title::<Top>::styled("Second", Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)).margin(1));
 widget2.extend(garnishes);
+```
+
+Or construct `GarnishedWidget` directly from a widget with
+`Garnishes` using the `GarnishableWidget` trait:
+
+```rust
+let widget = Line::raw("Widget")
+    .garnishes( garnishes![
+        Style::default().fg(Color::Blue),
+        DoubleBorder::default(),
+        Padding::uniform(2),
+        Style::default().fg(Color::White),
+    ] );
+
+// copy garnishes of widget to other_widget
+let other_widget = Line::raw("Other Widget")
+    .garnishes_from_slice(widget.as_slice());
 ```
 
 ### Accessing Garnishes
@@ -162,14 +179,13 @@ assert_eq!(widget.first_padding(), Some(&Padding::uniform(1)));
 ### Built-in Ratatui Support
 - `Style`: Background colors, text styling
 
-# Recipes
+## Recipes
 
 Here are some examples with screenshots of what you can do with **ratatui-garnish**.
 I only show the garnishes used, the complete code can
 be found in the examples directory.
 
-
-## Padding
+### Padding
 
 This example shows a combination of `Style` and `Padding`
 garnishes on a `ratatui::text::Line` widget.
@@ -205,7 +221,7 @@ garnishes![
 
 ```
 
-## Borders
+### Borders
 
 You can add any combination of borders to a widget, in this
 example it is again a `ratatui::text::Line`.
@@ -233,7 +249,7 @@ garnishes![
 ];
 ```
 
-## Titles
+### Titles
 
 This example shows the title garnishes, notice the difference
 between titles that reserve space (the triangles) and those
@@ -259,7 +275,7 @@ garnishes![
 ];
 ```
 
-## Shadow
+### Shadow
 
 Here we add a `Title::<Above>` and a `HalfShadow` to a
 `ratatui::widgets::Paragraph` widget.
@@ -281,12 +297,22 @@ garnishes![
 ];
 ```
 
-# Serde support
+## Features
+
+### Serde support
 
 Serialization & deserialization using serde can be enabled using the cargo feature
 `serde`. When it is enabled all garnishes, the `Garnish` enum and the `Garnishes`
 `Vec` can be serialized and deserialized. This makes it easy to add theme support
 to your application.
+
+### Traditional decorator
+
+The cargo feature `decorated widget` enables `DecoratedWidget` and
+`DecoratedStatefulWidget` which wrap one widget with one garnish,
+like the traditional decorator pattern. It offers little benefits
+over `GarnishedWidget`. I use it to compare `GarnishedWidget` to,
+e.g. in benchmarks.
 
 ## Performance
 
@@ -294,6 +320,20 @@ to your application.
 - Area modifications are accumulated efficiently.
 - Zero-cost abstractions ensure no runtime overhead for unused garnishes.
 - No dynamic dispatch or type erasure, preserving type safety and performance.
+
+The benches directory contains two benchmarks using criterion.
+`compare_compositions` compares 3 ways of decorating widgets:
+the Ratatui way, traditional decorator and flat decorator.
+The other one `traditional_and_flat_decorator` compares the two decorators
+with different numbers of garnishes. Both need the `decorator_widget`
+feature (for the traditional decorator pattern).
+
+## Flat decorator design pattern
+
+Ratatui-garnish uses a flat decorator. I wrote an article about
+this pattern and the design of ratatui-garnish: [Garnish your
+widgets: flexible, dynamic and type-safe composition in
+Rust](https://franklaranja.github.io/articles/garnish-your-widgets/)
 
 ## Compatibility
 
