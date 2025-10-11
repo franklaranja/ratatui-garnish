@@ -221,7 +221,7 @@
 //! are rendered in reverse order.
 //!
 //! ```rust
-//! use ratatui::{style::{Color, Style}, text::Text}};
+//! use ratatui::{style::{Color, Style}, text::Text};
 //! use ratatui_garnish::{
 //!     border::PlainBorder,
 //!     title::{Title, Top},
