@@ -17,8 +17,6 @@ categories = [
 readme = "README.md"
 license = "MIT"
 edition = "2024"
-# why o why does the following not work? nodyn is 1.85.0 too
-# rust-version = "1.85.0"
 
 [dependencies]
 bitflags = { version = "2.9.4" }

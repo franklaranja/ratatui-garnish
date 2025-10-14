@@ -15,14 +15,11 @@ use ratatui::{
 };
 
 use ratatui_garnish::{
-    GarnishedWidget, Padding,
+    GarnishableWidget, Padding,
     border::PlainBorder,
     garnishes,
     title::{Title, Top},
 };
-
-#[cfg(feature = "decorated_widget")]
-use ratatui_garnish::GarnishableWidget;
 
 #[allow(clippy::missing_panics_doc)]
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -33,6 +30,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         height: 20,
     }));
     let mut group = c.benchmark_group("Compare Composition Approaches");
+    group.sample_size(500);
+    group.measurement_time(std::time::Duration::from_secs(20));
     group.bench_function("Ratatui Way", |b| b.iter(|| ratatui_way(&mut buffer)));
     #[cfg(feature = "decorated_widget")]
     group.bench_function("Traditional Decorator", |b| {
@@ -57,16 +56,12 @@ fn ratatui_way(buffer: &mut Buffer) {
 }
 
 fn flat_decorator(buffer: &mut Buffer) {
-    let widget = black_box(GarnishedWidget {
-        widget: Text::raw("Hello World!"),
-        garnishes: garnishes![
-            Style::default().fg(Color::Red).bg(Color::White),
-            Title::<Top>::raw("Paragraph").margin(1),
-            PlainBorder::default(),
-            Padding::horizontal(2),
-        ]
-        .to_vec(),
-    });
+    let widget = black_box(Text::raw("Hello World!").garnishes(garnishes![
+        Style::default().fg(Color::Red).bg(Color::White),
+        Title::<Top>::raw("Paragraph").margin(1),
+        PlainBorder::default(),
+        Padding::horizontal(2),
+    ]));
     buffer.reset();
     widget.render(*buffer.area(), buffer);
 }
