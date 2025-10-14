@@ -1,0 +1,35 @@
+name: Publish to crates.io
+
+on:
+  push:
+    tags: ['v*']  # e.g., git tag v0.1.0 && git push origin v0.1.0
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: release  # Optional: Add GitHub environment for approval gates
+    permissions:
+      id-token: write  # For OIDC auth
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+
+    - name: Authenticate with crates.io
+      id: auth
+      uses: rust-lang/crates-io-auth-action@v1
+
+    - name: Run tests (including doc tests)
+      run: cargo test --verbose
+
+    - name: Publish
+      run: cargo publish
+      env:
+        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
