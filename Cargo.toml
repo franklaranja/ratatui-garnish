@@ -5,7 +5,6 @@ description = "Flexible, dynamic and type-safe decorator for Ratatui Widgets"
 authors = ["Frank Laranja <laranja@riseup.net>"]
 repository = "https://github.com/franklaranja/ratatui-garnish"
 keywords = [
-    "tui",
     "decorator",
     "widgets",
     "ratatui",
